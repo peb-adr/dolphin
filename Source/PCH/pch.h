@@ -64,7 +64,7 @@
 #ifdef _WIN32
 
 #if _MSC_FULL_VER < 180030723
-#error Please update your build environment to VS2013 with Update 3 or later!
+//#error Please update your build environment to VS2013 with Update 3 or later!
 #endif
 
 // This numeral indicates the "minimum system required" to run the resulting

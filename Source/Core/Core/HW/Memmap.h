@@ -94,8 +94,9 @@ u32 Read_Instruction(const u32 _Address);
 
 // For use by emulator
 
-std::string Read_String(const u32 startAddress, int count); // NEW FUNCTION
-void Write_String(const std::string text, const u32 startAddress); // NEW FUNCTION
+//std::string Read_String(const u32 startAddress, int count); // NEW FUNCTION
+//void Write_String(const std::string text, const u32 startAddress); // NEW FUNCTION
+// TODO: when these functions are fixed, uncomment!
 
 u8  Read_U8(const u32 _Address);
 u16 Read_U16(const u32 _Address);

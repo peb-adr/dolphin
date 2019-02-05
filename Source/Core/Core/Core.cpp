@@ -641,14 +641,6 @@ void Callback_VideoCopiedToXFB(bool video_update)
 	if (video_update)
 		Common::AtomicIncrement(s_drawn_frame);
 	Movie::FrameUpdate();
-	
-	// === EDITTED PART ===
-	if (Movie::updateMainFrame)
-	{
-		Movie::updateMainFrame = false;
-		Host_UpdateMainFrame();
-	}
-	// === ===
 }
 
 void UpdateTitle()

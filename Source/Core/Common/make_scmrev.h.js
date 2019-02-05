@@ -70,7 +70,7 @@ var isMaster	= 1;
 // === END ===
 
 // remove hash (and trailing "-0" if needed) from description
-describe = describe.replace(/(-0)?-[^-]+(-dirty)?$/, '$2');
+//describe = describe.replace(/(-0)?-[^-]+(-dirty)?$/, '$2');
 
 var out_contents =
 	"#define SCM_REV_STR \"" + revision + "\"\n" +

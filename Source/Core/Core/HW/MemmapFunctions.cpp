@@ -367,7 +367,7 @@ u32 Read_Opcode(u32 _Address)
 
 // === NEW FUNCTIONS ===
 // TODO: not working
-std::string Read_String(const u32 startAddress, int count)
+/*std::string Read_String(const u32 startAddress, int count)
 {
 	std::string output = "";
 
@@ -400,7 +400,7 @@ void Write_String(const std::string text, const u32 startAddress)
 		Memcheck(address, var, true, 1);
 		WriteToHardware<FLAG_WRITE, u8>(address, var);
 	}
-}
+}*/
 // === ===
 
 u8 Read_U8(const u32 _Address)

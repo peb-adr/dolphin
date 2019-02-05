@@ -47,8 +47,6 @@ namespace Lua
 	bool IsScriptRunning(std::string fileName);
 	void UpdateScripts(GCPadStatus* PadStatus);
 
-	void UpdateSuperswimScript(GCPadStatus* PadStatus);
-
 	void iPressButton(const char* button);
 	void iReleaseButton(const char* button);
 	void iSetMainStickX(int xVal);

@@ -109,7 +109,8 @@ int ReadValueString(lua_State *L)
 	u32 address = lua_tointeger(L, 1);
 	int count = lua_tointeger(L, 2);
 
-	std::string result = Memory::Read_String(address, count);
+	std::string result = "";
+	//std::string result = Memory::Read_String(address, count); TODO: when fixed, uncomment!
 
 	lua_pushstring(L, result.c_str()); // return value
 	return 1; // number of return values
@@ -187,7 +188,7 @@ int WriteValueString(lua_State *L)
 
 	std::string string = StringFromFormat("%s", value);
 
-	Memory::Write_String(string, address);
+	//Memory::Write_String(string, address);  TODO: when fixed, uncomment!
 
 	return 0; // number of return values
 }
@@ -392,15 +393,6 @@ int MsgBox(lua_State *L)
 	std::string message = StringFromFormat("Lua Msg: %s", text);
 
 	Core::DisplayMessage(message, delay);
-
-	return 0; // number of return values
-}
-
-int AbortSwim(lua_State *L)
-{
-	int argc = lua_gettop(L);
-
-	Movie::swimStarted = false;
 
 	return 0; // number of return values
 }
@@ -923,150 +915,4 @@ namespace Lua
 		*PadStatus = PadLocal;
 	}
 
-	//Superswim Script
-	void UpdateSuperswimScript(GCPadStatus* PadStatus)
-	{
-		if (!Core::IsRunningAndStarted())
-			return;
-
-		currScriptID = -1; //Special ID for Superswim Script
-
-		if (Movie::swimStarted && !Movie::swimInProgress) //Start Superswim
-		{
-			luaState_Superswim = luaL_newstate();
-
-			luaL_openlibs(luaState_Superswim);
-
-			//Reset vars
-			lua_isStateOperation = false;
-			lua_isStateSaved = false;
-			lua_isStateLoaded = false;
-
-			//Update Local Pad only when started (Superswim script has exclusive pad access)
-			PadLocal = *PadStatus;
-
-			//Register C Functions
-			RegisterGeneralLuaFunctions(luaState_Superswim);
-
-			//Unique to Superswim Script
-			lua_register(luaState_Superswim, "AbortSwim", AbortSwim);
-
-			std::string file = File::GetExeDirectory() + "\\Scripts\\Superswim.lua";
-
-			int status = luaL_dofile(luaState_Superswim, file.c_str());
-
-			if (status == 0)
-			{
-				//Execute Start function
-				lua_getglobal(luaState_Superswim, "startSwim");
-
-				lua_pushnumber(luaState_Superswim, Movie::swimDestPosX);
-				lua_pushnumber(luaState_Superswim, Movie::swimDestPosZ);
-
-				status = lua_pcall(luaState_Superswim, 2, LUA_MULTRET, 0);
-			}
-
-			if (status != 0)
-			{
-				HandleLuaErrors(luaState_Superswim, status);
-				lua_close(luaState_Superswim);
-
-				Movie::swimStarted = false;
-				return;
-			}
-
-			Movie::swimInProgress = true;
-			*PadStatus = PadLocal;
-		}
-		else if (!Movie::swimStarted && Movie::swimInProgress) 	//Cancel Superswim
-		{
-			lua_getglobal(luaState_Superswim, "cancelSwim");
-
-			int status = lua_pcall(luaState_Superswim, 0, LUA_MULTRET, 0);
-
-			if (status != 0)
-			{
-				HandleLuaErrors(luaState_Superswim, status);
-			}
-
-			lua_close(luaState_Superswim);
-
-			Movie::swimInProgress = false;
-			*PadStatus = PadLocal;
-
-			return;
-		}
-		else if (Movie::swimStarted && Movie::swimInProgress)
-		{
-			int status = 0;
-
-			//LUA Callbacks first (so Update Swim can already react to it)
-			if (lua_isStateOperation)
-			{
-				if (lua_isStateSaved)
-				{
-					//Saved State Callback
-					lua_getglobal(luaState_Superswim, "onStateSaved");
-
-					status = lua_pcall(luaState_Superswim, 0, LUA_MULTRET, 0);
-
-					if (status != 0)
-					{
-						HandleLuaErrors(luaState_Superswim, status);
-
-						lua_close(luaState_Superswim);
-
-						Movie::swimInProgress = false;
-						Movie::swimStarted = false;
-					}
-
-					lua_isStateOperation = false;
-					lua_isStateSaved = false;
-					lua_isStateLoaded = false;
-				}
-				else if (lua_isStateLoaded)
-				{
-					//Loaded State Callback
-					lua_getglobal(luaState_Superswim, "onStateLoaded");
-
-					status = lua_pcall(luaState_Superswim, 0, LUA_MULTRET, 0);
-
-					if (status != 0)
-					{
-						HandleLuaErrors(luaState_Superswim, status);
-
-						lua_close(luaState_Superswim);
-
-						Movie::swimInProgress = false;
-						Movie::swimStarted = false;
-					}
-
-					lua_isStateOperation = false;
-					lua_isStateSaved = false;
-					lua_isStateLoaded = false;
-				}
-			}
-
-			if (status == 0)
-			{
-				//Call Update function
-				lua_getglobal(luaState_Superswim, "updateSwim");
-
-				status = lua_pcall(luaState_Superswim, 0, LUA_MULTRET, 0);
-
-				if (status != 0)
-				{
-					HandleLuaErrors(luaState_Superswim, status);
-
-					lua_close(luaState_Superswim);
-
-					Movie::swimInProgress = false;
-					Movie::swimStarted = false;
-					return;
-				}
-			}
-
-			*PadStatus = PadLocal;
-		}
-	}
 }
