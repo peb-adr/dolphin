@@ -366,41 +366,55 @@ u32 Read_Opcode(u32 _Address)
 }
 
 // === NEW FUNCTIONS ===
-// TODO: not working
-/*std::string Read_String(const u32 startAddress, int count)
+std::string Read_String(const u32 _Address, int count)
 {
-	std::string output = "";
+    std::string output = "";
 
-	for (int i = 0; i < count; i++)
-	{
-		u32 address = startAddress + i;
-		std::string result;
+    for (int i = 0; i < count; i++)
+    {
+        u32 address = _Address + i;
+        std::string result;
 
-		u8 var = ReadFromHardware<FLAG_READ, u8>(address);
-		Memcheck(address, var, false, 1);
+        u8 _var = 0;
+        ReadFromHardware<u8>(_var, address , FLAG_READ);
+#ifdef ENABLE_MEM_CHECK
+        TMemCheck *mc = PowerPC::memchecks.GetMemCheck(address );
+        if (mc)
+        {
+            mc->numHits++;
+            mc->Action(&PowerPC::debug_interface, _var, address , false, 1, PC);
+        }
+#endif
 
-		result = var;
+        result = _var;
 
-		output.append(result);
-	}
-	return output;
+        output.append(result);
+    }
+    return output;
 }
 
 void Write_String(const std::string text, const u32 startAddress)
 {
-	size_t count = text.length();
+    size_t count = text.length();
 
-	for (int i = 0; i < count; i++)
-	{
-		u32 address = startAddress + i;
-		const char letter = text.at(i);
+    for (int i = 0; i < count; i++)
+    {
+        u32 address = startAddress + i;
+        const char letter = text.at(i);
 
-		u8 var = letter;
+        u8 var = letter;
 
-		Memcheck(address, var, true, 1);
-		WriteToHardware<FLAG_WRITE, u8>(address, var);
-	}
-}*/
+#ifdef ENABLE_MEM_CHECK
+        TMemCheck *mc = PowerPC::memchecks.GetMemCheck(address);
+        if (mc)
+        {
+            mc->numHits++;
+            mc->Action(&PowerPC::debug_interface, var, address, true, 1, PC);
+        }
+#endif
+        WriteToHardware<u8>(address, var, FLAG_WRITE);
+    }
+}
 // === ===
 
 u8 Read_U8(const u32 _Address)
