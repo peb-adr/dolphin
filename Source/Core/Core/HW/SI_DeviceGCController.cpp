@@ -113,10 +113,7 @@ bool CSIDevice_GCController::GetData(u32& _Hi, u32& _Low)
 	Pad::GetStatus(ISIDevice::m_iDeviceNumber, &PadStatus);
 	
 	// === ADDED ===
-	if (!Movie::IsPlayingInput())
-	{
-		Lua::UpdateScripts(&PadStatus);
-	}
+	Lua::UpdateScripts(&PadStatus);
 	// === ===
 	
 	Movie::CallGCInputManip(&PadStatus, ISIDevice::m_iDeviceNumber);
