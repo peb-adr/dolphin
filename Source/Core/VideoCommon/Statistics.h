@@ -30,6 +30,8 @@ struct Statistics
 	float g2proj_6, g2proj_7, g2proj_8, g2proj_9, g2proj_10, g2proj_11, g2proj_12, g2proj_13, g2proj_14, g2proj_15;
 
 	std::vector<EFBRectangle> efb_regions;
+	
+	std::string statistics_text;
 
 	struct ThisFrame
 	{
@@ -57,6 +59,8 @@ struct Statistics
 	ThisFrame thisFrame;
 	void ResetFrame();
 	static void SwapDL();
+	
+	static void SetString(std::string text);
 
 	static std::string ToString();
 	static std::string ToStringProj();
