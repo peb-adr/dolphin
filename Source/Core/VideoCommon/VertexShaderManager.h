@@ -37,8 +37,6 @@ public:
 	// THC98 - new functions
 	static float GetTranslation(int i);
 	static float GetRotation(int i);
-	static void SetTranslation(float val, int i);
-	static void SetRotation(float val, int i);
 
 	static VertexShaderConstants constants;
 	static bool dirty;
