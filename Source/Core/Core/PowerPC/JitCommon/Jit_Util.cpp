@@ -994,3 +994,10 @@ void EmuCodeBlock::JitClearCA()
 {
 	MOV(8, PPCSTATE(xer_ca), Imm8(0));
 }
+
+void EmuCodeBlock::Clear()
+{
+	registersInUseAtLoc.clear();
+	pcAtLoc.clear();
+	//exceptionHandlerAtLoc.clear();
+}
