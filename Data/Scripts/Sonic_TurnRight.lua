@@ -11,7 +11,7 @@ end
 function onScriptUpdate()
 	
 	-- input current Y rotation angle + smoothTurnAngle units to the main stick
-	core.angleInput((core.getYRot() + core.smoothTurnAngle) % 65536)
+	core.angleInput((core.getRot().Y + core.smoothTurnAngle) % 65536)
 	
 end
 

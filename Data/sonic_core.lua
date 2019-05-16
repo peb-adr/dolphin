@@ -6,6 +6,7 @@ local sh_angles = require "sh_angles"
 local angles
 
 local smoothTurnAngle = 4000
+core.smoothTurnAngle = smoothTurnAngle
 
 ----- GETTING DATA FROM MEMORY -----
 
@@ -20,7 +21,7 @@ core.getGameID = getGameID
 
 -- getActiveChar: checks the active character (Sonic Heroes only)
 local function getActiveChar()
-	return ReadValue8(0x9D986B)
+	return ReadValue8(0x9D986A)
 end
 core.getActiveChar = getActiveChar
 
@@ -64,11 +65,11 @@ local function getSpd()
 	local offset3
 	if getGameID() == "GSNE8P" then
 		pointer3 = 0x1E7728
-		offset3 = 0x40
+		offset3 = 0x44
 	elseif getGameID() == "GXSE8P" then
 		pointer3 = 0x7A8240
 		offset3 = 0x0
-	elseif getGameID() == "G9SE8P" then
+	elseif getGameID() == "G9SE8P" then -- Stored speed doesn't exist in Sonic Heroes
 		pointer3 = 0x2AD0D0 + getActiveChar() * 4
 		offset3 = 0x60
 	end
@@ -100,6 +101,39 @@ local function getPos()
 	return {X = ReadValueFloat(address + offset), Y = ReadValueFloat(address + offset + 4), Z = ReadValueFloat(address + offset + 8)}
 end
 core.getPos = getPos
+
+local function getSonicPos() -- Sonic Heroes
+	local pointer = 0x2AD090
+	local offset = 0x18
+	local address = GetPointerNormal(pointer)
+	if ReadValue32(pointer) == 0 then
+		return {X = 0, Y = 0, Z = 0}
+	end
+	return {X = ReadValueFloat(address + offset), Y = ReadValueFloat(address + offset + 4), Z = ReadValueFloat(address + offset + 8)}
+end
+core.getSonicPos = getSonicPos
+
+local function getTailsPos() -- Sonic Heroes
+	local pointer = 0x2AD094
+	local offset = 0x18
+	local address = GetPointerNormal(pointer)
+	if ReadValue32(pointer) == 0 then
+		return {X = 0, Y = 0, Z = 0}
+	end
+	return {X = ReadValueFloat(address + offset), Y = ReadValueFloat(address + offset + 4), Z = ReadValueFloat(address + offset + 8)}
+end
+core.getTailsPos = getTailsPos
+
+local function getKnuxPos() -- Sonic Heroes
+	local pointer = 0x2AD098
+	local offset = 0x18
+	local address = GetPointerNormal(pointer)
+	if ReadValue32(pointer) == 0 then
+		return {X = 0, Y = 0, Z = 0}
+	end
+	return {X = ReadValueFloat(address + offset), Y = ReadValueFloat(address + offset + 4), Z = ReadValueFloat(address + offset + 8)}
+end
+core.getKnuxPos = getKnuxPos
 
 local function getRot()
 	local pointer
@@ -229,6 +263,54 @@ local function getCameraYRot()
 end
 core.getCameraYRot = getCameraYRot
 
+local function getStick()
+	local address_mag
+	local address_ang
+	if getGameID() == "GSNE8P" then
+		address_mag = 0x1E53BC
+		address_ang = 0x1E53BA
+	elseif getGameID() == "GXSE8P" then
+		address_mag = 0x74CA94
+		address_ang = 0x74CA92
+	elseif getGameID() == "G9SE8P" then
+		address_mag = 0x2B0310
+		address_ang = 0x2B0316
+	end
+	return {Angle = ReadValue16(address_ang), Magnitude = ReadValueFloat(address_mag)}
+end
+core.getStick = getStick
+
+local function getInput()
+	local address
+	if getGameID() == "GSNE8P" then
+		address = 0x2BAB78
+	elseif getGameID() == "GXSE8P" then
+		address = 0xA6CE0
+	elseif getGameID() == "G9SE8P" then
+		address = 0x40EA50
+	end
+	return {ABXYS = ReadValue8(address), DZ = ReadValue8(address + 1)}
+end
+core.getInput = getInput
+
+local function getRailTilt()
+	local pointer
+	local offset
+	if getGameID() == "GSNE8P" then
+		pointer = 0x1E7728
+		offset = 0x184
+	elseif getGameID() == "G9SE8P" then
+		pointer = 0x2AD0D0 + getActiveChar() * 4
+		offset = 0x16C
+	end
+	local address = GetPointerNormal(pointer)
+	if ReadValue32(pointer) == 0 then
+		return 0
+	end
+	return ReadValueFloat(address + offset)
+end
+core.getRailTilt = getRailTilt
+
 ----- CORE FUNCTIONS -----
 
 -- angleInput: sets X and Y in main stick to make the character go to angleTarget
@@ -302,7 +384,6 @@ local function angleToPosition(X, Y, Z)
 	local dy = Y - getPos().Y
 	local dz = Z - getPos().Z
 	
-	-- uncomment the line below when rotateCoordinates is fixed
 	dx, dy, dz = rotateCoordinates(dx, dy, dz)
 	
 	-- calculating the angle itself based on the position deltas (for some reason, atan2 wasn't working, so I had to do this work around)
@@ -324,6 +405,33 @@ local function angleToPosition(X, Y, Z)
 	return angle * 65536 / 360
 end
 core.angleToPosition = angleToPosition
+
+-- angleFlight: calculates the relative angle between the flight character and their teammates (Sonic Heroes only)
+local function angleFlight()
+
+	-- deltas in position
+	local dx = (getSonicPos().X + getKnuxPos().X) / 2 - getTailsPos().X
+	local dz = (getSonicPos().Z + getKnuxPos().Z) / 2 - getTailsPos().Z
+	
+	-- calculating the angle itself based on the position deltas (for some reason, atan2 wasn't working, so I had to do this work around)
+	
+	-- if angle is 0, return 0 right away to avoid div/0 issues
+	if dx == 0 and dz == 0 then
+		return 0
+	end
+	
+	local angle = math.deg(math.asin( dz / math.sqrt(dx^2 + dz^2 ) ) )
+	
+	if dx < 0 then
+		angle = 180 - angle
+	elseif dz < 0 then
+		angle = 360 + angle
+	end
+	
+	-- conversion from degrees to 2 bytes value, which is what's used in the game
+	return angle
+end
+core.angleFlight = angleFlight
 
 -- smoothTurn: limits the given angle to a range of +smoothTurnAngle and -smoothTurnAngle units around current Y rotation angle
 local function smoothTurn(angle)

@@ -31,17 +31,32 @@ function onScriptUpdate()
 	text = text .. "\n\n===== Position ====="
 	text = text .. string.format("\nX: %12.6f | Y: %12.6f | Z: %12.6f", core.getPos().X, core.getPos().Y, core.getPos().Z)
 	
+	local xz = (core.getPos().X - core.getPos().Z) / math.sqrt(2)
+	local zx = (core.getPos().Z + core.getPos().X) / math.sqrt(2)
+	
+	text = text .. string.format("\nXZ: %12.6f | ZX: %12.6f", xz, zx)
+	
 	text = text .. "\n\n===== Rotation ====="
-	text = text .. string.format("\nX: %05d (%6.2f deg)\nY: %05d (%6.2f deg)\nZ: %05d (%6.2f deg)", core.getRot().X, core.getRot().X * 360 / 65536, core.getRot().Y, core.getRot().Y * 360 / 65536, core.getRot().Z, core.getRot().Z * 360 / 65536)
+	text = text .. string.format("\nX: 0x%04X (%6.2f deg)\nY: 0x%04X (%6.2f deg)\nZ: 0x%04X (%6.2f deg)", core.getRot().X, core.getRot().X * 360 / 65536, core.getRot().Y, core.getRot().Y * 360 / 65536, core.getRot().Z, core.getRot().Z * 360 / 65536)
 	
 	local grav_angle = math.deg(math.acos(math.cos(math.rad(core.getRot().X * 360 / 65536)) * math.cos(math.rad(core.getRot().Z * 360 / 65536))))
 	
 	text = text .. string.format("\nGravity: %6.2f deg", grav_angle)
 	
-	text = text .. string.format("\nFinal Y:  %05d (%6.2f deg)", core.getFinalRot().Y, core.getFinalRot().Y * 360 / 65536)
+	text = text .. string.format("\nFinal Y:  0x%04X (%6.2f deg)", core.getFinalRot().Y, core.getFinalRot().Y * 360 / 65536)
+	
+	if core.getGameID() == "G9SE8P" then
+		text = text .. string.format("\nFlight angle: %6.2f deg", core.angleFlight())
+	end
 	
 	text = text .. "\n\n===== Misc ====="
-	text = text .. string.format("\nAction: %d | Hover: %d | Status: ", core.getAction(), core.getHover())
+	text = text .. string.format("\nAction: %d | Hover: %d", core.getAction(), core.getHover())
+	
+	if core.getGameID() == "G9SE8P" then
+		text = text .. string.format(" | RailTilt: %8.5f", core.getRailTilt())
+	end
+	
+	text = text .. " | Status: "
 	
 	status = core.getStatus()
 	
@@ -49,6 +64,8 @@ function onScriptUpdate()
 		text = text .. string.format("%d", status%2)
 		status = (status - status%2) / 2
 	end
+	
+	text = text .. string.format("\nStickAngle: 0x%04X | StickMagnitude: %8.6f", core.getStick().Angle, core.getStick().Magnitude)
 	
 	SetScreenText(text)
 	
