@@ -138,7 +138,7 @@ public final class NativeLibrary
     public static final int CLASSIC_STICK_LEFT_RIGHT = 317;
     public static final int CLASSIC_STICK_RIGHT = 318;
     public static final int CLASSIC_STICK_RIGHT_UP = 319;
-    public static final int CLASSIC_STICK_RIGHT_DOWN = 100;
+    public static final int CLASSIC_STICK_RIGHT_DOWN = 320;
     public static final int CLASSIC_STICK_RIGHT_LEFT = 321;
     public static final int CLASSIC_STICK_RIGHT_RIGHT = 322;
     public static final int CLASSIC_TRIGGER_L = 323;
@@ -269,6 +269,9 @@ public final class NativeLibrary
   public static native void SetMotionSensorsEnabled(boolean accelerometerEnabled,
           boolean gyroscopeEnabled);
 
+  // Angle is in radians and should be non-negative
+  public static native double GetInputRadiusAtAngle(int emu_pad_id, int stick, double angle);
+
   public static native void NewGameIniFile();
 
   public static native void LoadGameIniFile(String gameId);
@@ -362,6 +365,8 @@ public final class NativeLibrary
    * Returns the current working user directory
    */
   public static native String GetUserDirectory();
+
+  public static native void SetCacheDirectory(String directory);
 
   public static native int DefaultCPUCore();
 
