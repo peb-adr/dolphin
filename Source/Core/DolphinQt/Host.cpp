@@ -148,7 +148,8 @@ void Host_NotifyMapLoaded()
 // In particular, RequestRenderWindowSize, RequestFullscreen, and
 // UpdateMainFrame should almost certainly be removed.
 void Host_UpdateMainFrame()
-{
+{ 
+  emit Host::GetInstance()->UpdateMainFrame();
 }
 
 void Host_RequestRenderWindowSize(int w, int h)

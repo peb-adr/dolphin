@@ -273,6 +273,8 @@ add_executable(dolphin-emu
   TAS/StickWidget.h
   TAS/IRWidget.cpp
   TAS/IRWidget.h
+  TAS/MovieVisualizerWindow.cpp
+  TAS/MovieVisualizerWindow.h
   Updater.cpp
   Updater.h
 )

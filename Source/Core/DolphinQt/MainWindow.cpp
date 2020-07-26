@@ -98,6 +98,7 @@
 #include "DolphinQt/SearchBar.h"
 #include "DolphinQt/Settings.h"
 #include "DolphinQt/TAS/GCTASInputWindow.h"
+#include "DolphinQt/TAS/MovieVisualizerWindow.h"
 #include "DolphinQt/TAS/WiiTASInputWindow.h"
 #include "DolphinQt/ToolBar.h"
 #include "DolphinQt/WiiUpdate.h"
@@ -387,6 +388,8 @@ void MainWindow::CreateComponents()
     m_wii_tas_input_windows[controller_id]->GetValues(rpt, ext, key);
   });
 
+  m_movie_visualizer_window = new MovieVisualizerWindow(nullptr);
+
   m_jit_widget = new JITWidget(this);
   m_log_widget = new LogWidget(this);
   m_log_config_widget = new LogConfigWidget(this);
@@ -498,6 +501,7 @@ void MainWindow::ConnectMenuBar()
   connect(m_menu_bar, &MenuBar::StopRecording, this, &MainWindow::OnStopRecording);
   connect(m_menu_bar, &MenuBar::ExportRecording, this, &MainWindow::OnExportRecording);
   connect(m_menu_bar, &MenuBar::ShowTASInput, this, &MainWindow::ShowTASInput);
+  connect(m_menu_bar, &MenuBar::ShowMovieVisualizer, this, &MainWindow::ShowMovieVisualizer);
 
   // View
   connect(m_menu_bar, &MenuBar::ShowList, m_game_list, &GameList::SetListView);
@@ -632,6 +636,7 @@ void MainWindow::ConnectRenderWidget()
 void MainWindow::ConnectHost()
 {
   connect(Host::GetInstance(), &Host::RequestStop, this, &MainWindow::RequestStop);
+  connect(Host::GetInstance(), &Host::UpdateMainFrame, this, &MainWindow::RequestStop);
 }
 
 void MainWindow::ConnectStack()
@@ -1202,6 +1207,8 @@ void MainWindow::StateLoad()
   QString path = QFileDialog::getOpenFileName(this, tr("Select a File"), QDir::currentPath(),
                                               tr("All Save States (*.sav *.s##);; All Files (*)"));
   State::LoadAs(path.toStdString());
+
+  m_movie_visualizer_window->StateLoad(path);
 }
 
 void MainWindow::StateSave()
@@ -1209,21 +1216,29 @@ void MainWindow::StateSave()
   QString path = QFileDialog::getSaveFileName(this, tr("Select a File"), QDir::currentPath(),
                                               tr("All Save States (*.sav *.s##);; All Files (*)"));
   State::SaveAs(path.toStdString());
+
+  m_movie_visualizer_window->StateSave(path);
 }
 
 void MainWindow::StateLoadSlot()
 {
   State::Load(m_state_slot);
+
+  m_movie_visualizer_window->StateLoadSlot(m_state_slot);
 }
 
 void MainWindow::StateSaveSlot()
 {
   State::Save(m_state_slot);
+
+  m_movie_visualizer_window->StateSaveSlot(m_state_slot);
 }
 
 void MainWindow::StateLoadSlotAt(int slot)
 {
   State::Load(slot);
+
+  m_movie_visualizer_window->StateLoadSlot(slot);
 }
 
 void MainWindow::StateLoadLastSavedAt(int slot)
@@ -1234,6 +1249,8 @@ void MainWindow::StateLoadLastSavedAt(int slot)
 void MainWindow::StateSaveSlotAt(int slot)
 {
   State::Save(slot);
+
+  m_movie_visualizer_window->StateSaveSlot(slot);
 }
 
 void MainWindow::StateLoadUndo()
@@ -1686,6 +1703,13 @@ void MainWindow::ShowTASInput()
       m_wii_tas_input_windows[i]->activateWindow();
     }
   }
+}
+
+void MainWindow::ShowMovieVisualizer()
+{
+  m_movie_visualizer_window->show();
+  m_movie_visualizer_window->raise();
+  m_movie_visualizer_window->activateWindow();
 }
 
 void MainWindow::OnConnectWiiRemote(int id)
