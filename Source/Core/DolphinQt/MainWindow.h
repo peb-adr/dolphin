@@ -32,6 +32,7 @@ class LogWidget;
 class MappingWindow;
 class MemoryWidget;
 class MenuBar;
+class MovieVisualizerWindow;
 class NetPlayDialog;
 class NetPlaySetupDialog;
 class NetworkWidget;
@@ -175,6 +176,7 @@ private:
   void OnActivateChat();
   void OnRequestGolfControl();
   void ShowTASInput();
+  void ShowMovieVisualizer();
 
   void ChangeDisc();
   void EjectDisc();
@@ -220,6 +222,7 @@ private:
   std::array<GCTASInputWindow*, num_gc_controllers> m_gc_tas_input_windows{};
   static constexpr int num_wii_controllers = 4;
   std::array<WiiTASInputWindow*, num_wii_controllers> m_wii_tas_input_windows{};
+  MovieVisualizerWindow* m_movie_visualizer_window;
 
   BreakpointWidget* m_breakpoint_widget;
   CodeWidget* m_code_widget;
