@@ -37,6 +37,7 @@ signals:
   void RequestRenderSize(int w, int h);
   void UpdateDisasmDialog();
   void NotifyMapLoaded();
+  void UpdateMainFrame();
 
 private:
   Host();
