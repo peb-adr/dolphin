@@ -6,6 +6,7 @@
 
 package org.dolphinemu.dolphinemu;
 
+import android.util.DisplayMetrics;
 import android.view.Surface;
 
 import androidx.appcompat.app.AlertDialog;
@@ -15,6 +16,7 @@ import org.dolphinemu.dolphinemu.utils.Log;
 import org.dolphinemu.dolphinemu.utils.Rumble;
 
 import java.lang.ref.WeakReference;
+import java.util.LinkedHashMap;
 
 /**
  * Class which contains methods that interact
@@ -370,6 +372,8 @@ public final class NativeLibrary
 
   public static native int DefaultCPUCore();
 
+  public static native int GetMaxLogLevel();
+
   public static native void ReloadConfig();
 
   /**
@@ -452,6 +456,10 @@ public final class NativeLibrary
 
   public static native void ReloadWiimoteConfig();
 
+  public static native LinkedHashMap<String, String> GetLogTypeNames();
+
+  public static native void ReloadLoggerConfig();
+
   public static native boolean InstallWAD(String file);
 
   public static native String FormatSize(long bytes, int decimals);
@@ -527,7 +535,7 @@ public final class NativeLibrary
         {
           lock.wait();
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
         }
       }
@@ -562,6 +570,13 @@ public final class NativeLibrary
     {
       emulationActivity.runOnUiThread(emulationActivity::initInputPointer);
     }
+  }
+
+  public static float getRenderSurfaceScale()
+  {
+    DisplayMetrics metrics = new DisplayMetrics();
+    sEmulationActivity.get().getWindowManager().getDefaultDisplay().getMetrics(metrics);
+    return metrics.scaledDensity;
   }
 
   public static native float GetGameAspectRatio();

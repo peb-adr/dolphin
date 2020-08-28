@@ -379,7 +379,7 @@ bool WIARVZFileReader<RVZ>::Read(u64 offset, u64 size, u8* out_ptr)
                 offset - partition_data_offset, bytes_to_read, out_ptr, partition_data_offset,
                 partition_total_sectors * VolumeWii::BLOCK_DATA_SIZE, partition.partition_key,
                 [this, &hash_exception_error](
-                    VolumeWii::HashBlock hash_blocks[VolumeWii::BLOCKS_PER_GROUP], u64 offset) {
+                    VolumeWii::HashBlock hash_blocks[VolumeWii::BLOCKS_PER_GROUP], u64 offset_) {
                   // EncryptGroups calls ReadWiiDecrypted, which calls ReadFromGroups,
                   // which populates m_exception_list when m_write_to_exception_list == true
                   if (!ApplyHashExceptions(m_exception_list, hash_blocks))
@@ -443,10 +443,10 @@ bool WIARVZFileReader<RVZ>::ReadWiiDecrypted(u64 offset, u64 size, u8* out_ptr,
         (Common::swap32(data.first_sector) - partition_first_sector) * VolumeWii::BLOCK_DATA_SIZE;
     const u64 data_size = Common::swap32(data.number_of_sectors) * VolumeWii::BLOCK_DATA_SIZE;
 
-    if (!ReadFromGroups(&offset, &size, &out_ptr, chunk_size, VolumeWii::BLOCK_DATA_SIZE,
-                        data_offset, data_size, Common::swap32(data.group_index),
-                        Common::swap32(data.number_of_groups),
-                        std::max<u64>(1, chunk_size / VolumeWii::GROUP_DATA_SIZE)))
+    if (!ReadFromGroups(
+            &offset, &size, &out_ptr, chunk_size, VolumeWii::BLOCK_DATA_SIZE, data_offset,
+            data_size, Common::swap32(data.group_index), Common::swap32(data.number_of_groups),
+            std::max<u32>(1, static_cast<u32>(chunk_size / VolumeWii::GROUP_DATA_SIZE))))
     {
       return false;
     }

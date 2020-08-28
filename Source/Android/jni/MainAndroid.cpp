@@ -244,6 +244,8 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetCacheDire
     JNIEnv* env, jobject obj, jstring jDirectory);
 JNIEXPORT jint JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_DefaultCPUCore(JNIEnv* env,
                                                                                    jobject obj);
+JNIEXPORT jint JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetMaxLogLevel(JNIEnv* env,
+                                                                                   jobject obj);
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetProfiling(JNIEnv* env,
                                                                                  jobject obj,
                                                                                  jboolean enable);
@@ -549,6 +551,12 @@ JNIEXPORT jint JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_DefaultCPUCo
   return static_cast<jint>(PowerPC::DefaultCPUCore());
 }
 
+JNIEXPORT jint JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetMaxLogLevel(JNIEnv* env,
+                                                                                   jobject obj)
+{
+  return static_cast<jint>(MAX_LOGLEVEL);
+}
+
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetProfiling(JNIEnv* env,
                                                                                  jobject obj,
                                                                                  jboolean enable)
@@ -641,45 +649,10 @@ Java_org_dolphinemu_dolphinemu_NativeLibrary_ReportStartToAnalytics(JNIEnv* env,
 // Based on the scaledDensity of the device's display metrics.
 static float GetRenderSurfaceScale(JNIEnv* env)
 {
-  // NativeLibrary emulation_activity = NativeLibrary.getEmulationActivity();
   jclass native_library_class = env->FindClass("org/dolphinemu/dolphinemu/NativeLibrary");
-  jmethodID get_emulation_activity_method =
-      env->GetStaticMethodID(native_library_class, "getEmulationActivity",
-                             "()Lorg/dolphinemu/dolphinemu/activities/EmulationActivity;");
-  jobject emulation_activity =
-      env->CallStaticObjectMethod(native_library_class, get_emulation_activity_method);
-
-  // WindowManager window_manager = emulation_activity.getWindowManager();
-  jmethodID get_window_manager_method =
-      env->GetMethodID(env->GetObjectClass(emulation_activity), "getWindowManager",
-                       "()Landroid/view/WindowManager;");
-  jobject window_manager = env->CallObjectMethod(emulation_activity, get_window_manager_method);
-
-  // Display display = window_manager.getDisplay();
-  jmethodID get_display_method = env->GetMethodID(env->GetObjectClass(window_manager),
-                                                  "getDefaultDisplay", "()Landroid/view/Display;");
-  jobject display = env->CallObjectMethod(window_manager, get_display_method);
-
-  // DisplayMetrics metrics = new DisplayMetrics();
-  jclass display_metrics_class = env->FindClass("android/util/DisplayMetrics");
-  jmethodID display_metrics_constructor = env->GetMethodID(display_metrics_class, "<init>", "()V");
-  jobject metrics = env->NewObject(display_metrics_class, display_metrics_constructor);
-
-  // display.getMetrics(metrics);
-  jmethodID get_metrics_method = env->GetMethodID(env->GetObjectClass(display), "getMetrics",
-                                                  "(Landroid/util/DisplayMetrics;)V");
-  env->CallVoidMethod(display, get_metrics_method, metrics);
-
-  // float scaled_density = metrics.scaledDensity;
-  jfieldID scaled_density_field =
-      env->GetFieldID(env->GetObjectClass(metrics), "scaledDensity", "F");
-  float scaled_density = env->GetFloatField(metrics, scaled_density_field);
-  __android_log_print(ANDROID_LOG_INFO, DOLPHIN_TAG, "Using %f for render surface scale.",
-                      scaled_density);
-
-  // cleanup
-  env->DeleteLocalRef(metrics);
-  return scaled_density;
+  jmethodID get_render_surface_scale_method =
+      env->GetStaticMethodID(native_library_class, "getRenderSurfaceScale", "()F");
+  return env->CallStaticFloatMethod(native_library_class, get_render_surface_scale_method);
 }
 
 static void Run(JNIEnv* env, const std::vector<std::string>& paths,
@@ -751,6 +724,28 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_ChangeDisc(J
   const std::string path = GetJString(env, jFile);
   __android_log_print(ANDROID_LOG_INFO, DOLPHIN_TAG, "Change Disc: %s", path.c_str());
   Core::RunAsCPUThread([&path] { DVDInterface::ChangeDisc(path); });
+}
+
+JNIEXPORT jobject JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetLogTypeNames(JNIEnv* env,
+                                                                                       jobject obj)
+{
+  std::map<std::string, std::string> map = Common::Log::LogManager::GetInstance()->GetLogTypes();
+
+  auto map_size = static_cast<jsize>(map.size());
+  jobject linked_hash_map =
+      env->NewObject(IDCache::GetLinkedHashMapClass(), IDCache::GetLinkedHashMapInit(), map_size);
+  for (const auto& entry : map)
+  {
+    env->CallObjectMethod(linked_hash_map, IDCache::GetLinkedHashMapPut(),
+                          ToJString(env, entry.first), ToJString(env, entry.second));
+  }
+  return linked_hash_map;
+}
+
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_ReloadLoggerConfig(JNIEnv* env,
+                                                                                       jobject obj)
+{
+  Common::Log::LogManager::Init();
 }
 
 JNIEXPORT jboolean JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_InstallWAD(JNIEnv* env,
