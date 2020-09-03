@@ -41,26 +41,17 @@ private:
   void UpdateMeasureLines();
   void UpdateCursor();
 
-  // void MakeBoxedText(QGraphicsRectItem* box, QGraphicsSimpleTextItem* text, int* xPos);
-
   QGraphicsScene* m_scene;
   QGraphicsRectItem* m_movieItem;
   QList<QGraphicsRectItem*> m_measureLineItems;
 
-  // QGraphicsRectItem* m_cursorMarkerLineItem;
-  // QGraphicsRectItem* m_cursorMarkerRectItem;
-  // QGraphicsSimpleTextItem* m_cursorMarkerTextItem;
   Marker* m_cursorMarker;
-
-  QMap<int, QGraphicsRectItem*> m_stateSlotLineItems;
-  QMap<int, QGraphicsRectItem*> m_stateSlotRectItems;
-  QMap<int, QGraphicsSimpleTextItem*> m_stateSlotTextItems;
+  QMap<int, Marker*> m_stateSlotMarkers;
+  QMap<int, Marker*> m_stateMarkers;
 
   int m_scale;
   int m_width;
   u64 m_previousFrame;
-
-  QList<StateLine> m_stateLines;
 };
 
   
@@ -78,12 +69,17 @@ public:
   QRectF boundingRect() const override;
   void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
       QWidget *widget = 0) override;
+  QPainterPath shape() const override;
 
 private:
+  void RecalculateTextBoxPos();
+
   MovieTimelineWidget* m_timeline;
 
   QGraphicsRectItem* m_lineUpperItem;
   QGraphicsRectItem* m_lineLowerItem;
   QGraphicsRectItem* m_rectItem;
   QGraphicsSimpleTextItem* m_textItem;
+
+  QPointF m_previousPos;
 };
