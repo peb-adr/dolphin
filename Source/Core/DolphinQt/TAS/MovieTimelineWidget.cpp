@@ -25,7 +25,7 @@
 // TODO dynamic height (dragable slider in VisualizerWindow layout)
 static const int s_height = 100;
 static const int s_padding = 50;
-static const int s_measureHeight = 20;
+static const int s_markerHeight = 20;
 static const int s_measureInterval = 10;
 // static const int s_cursorRectWidth = 30;
 
@@ -44,12 +44,7 @@ static const QBrush s_measureEvenBrush(QColor(QStringLiteral("#bbb")));
 static const QPen s_measureOddPen(QColor(QStringLiteral("#ccc")));
 static const QBrush s_measureOddBrush(QColor(QStringLiteral("#ccc")));
 
-static const QPen s_cursorLinePen(QColor(QStringLiteral("#07c")));
-static const QBrush s_cursorLineBrush(QColor(QStringLiteral("#07c")));
-static const QPen s_cursorRectPen(QBrush(QColor(QStringLiteral("#07c"))), 2);
-static const QBrush s_cursorRectBrush(QColor(QStringLiteral("transparent")));
-static const QPen s_cursorTextPen(QColor(QStringLiteral("#07c")));
-static const QBrush s_cursorTextBrush(QColor(QStringLiteral("#07c")));
+static const QColor s_cursorColor(QStringLiteral("#07c"));
 
 static const QPen s_stateLinePen(QColor(QStringLiteral("#000")));
 static const QBrush s_stateLineBrush(QColor(QStringLiteral("#000")));
@@ -81,20 +76,10 @@ MovieTimelineWidget::MovieTimelineWidget(QWidget* parent) : QGraphicsView(parent
   // Setup GraphicsItems
   m_movieItem = m_scene->addRect(0, 0, 0, s_height);
   m_movieItem->setZValue(-4);
-  m_cursorLineItem = m_scene->addRect(0, s_measureHeight, m_scale, s_height - s_measureHeight);
-  m_cursorLineItem->setPen(s_cursorLinePen);
-  m_cursorLineItem->setBrush(s_cursorLineBrush);
-  m_cursorRectItem = m_scene->addRect(0, 1, 20, s_measureHeight - 1);
-  m_cursorRectItem->setPen(s_cursorRectPen);
-  m_cursorRectItem->setBrush(s_cursorRectBrush);
-  m_cursorTextItem = m_scene->addSimpleText(tr("0"));
-  m_cursorTextItem->setFont(QFont(QStringLiteral(""), s_measureHeight - 4, 3));
-  m_cursorTextItem->setY((s_measureHeight - ((int) m_cursorTextItem->boundingRect().height())) / 2);
-  m_cursorTextItem->setPen(s_cursorTextPen);
-  m_cursorTextItem->setBrush(s_cursorTextBrush);
-  m_cursorLineItem->setZValue(-1);
-  m_cursorRectItem->setZValue(-1);
-  m_cursorTextItem->setZValue(-1);
+  m_cursorMarker = new Marker(this);
+  m_cursorMarker->SetColor(s_cursorColor);
+  m_cursorMarker->setZValue(-1);
+  m_scene->addItem(m_cursorMarker);
 }
 
 void MovieTimelineWidget::AddState(const QString& name, int frame)
@@ -111,19 +96,19 @@ void MovieTimelineWidget::AddStateSlot(int slot, int frame)
   if (!m_stateSlotLineItems.contains(slot))
   {
     // line item
-    line = m_scene->addRect(0, s_measureHeight, m_scale, s_height - 2 * s_measureHeight);
+    line = m_scene->addRect(0, s_markerHeight, m_scale, s_height - 2 * s_markerHeight);
     line->setPen(s_stateLinePen);
     line->setBrush(s_stateLineBrush);
     m_stateSlotLineItems.insert(slot, line);
     // rect item
-    rect = m_scene->addRect(0, s_height - s_measureHeight, 20, s_measureHeight - 1);
+    rect = m_scene->addRect(0, s_height - s_markerHeight, 20, s_markerHeight - 1);
     rect->setPen(s_stateRectPen);
     rect->setBrush(s_stateRectBrush);
     m_stateSlotRectItems.insert(slot, rect);
     // text item
     text = m_scene->addSimpleText(QString::number(slot));
-    text->setFont(QFont(QStringLiteral(""), s_measureHeight - 4, 3));
-    text->setY(s_height - s_measureHeight + (s_measureHeight - ((int) text->boundingRect().height())) / 2);
+    text->setFont(QFont(QStringLiteral(""), s_markerHeight - 4, 3));
+    text->setY(s_height - s_markerHeight + (s_markerHeight - ((int) text->boundingRect().height())) / 2);
     text->setPen(s_stateTextPen);
     text->setBrush(s_stateTextBrush);
     m_stateSlotTextItems.insert(slot, text);
@@ -138,7 +123,7 @@ void MovieTimelineWidget::AddStateSlot(int slot, int frame)
   text = m_stateSlotTextItems.value(slot);
   int x = frame * m_scale;
   line->setX(x);
-  MakeBoxedText(rect, text, &x);
+  // MakeBoxedText(rect, text, &x);
   rect->setX(x);
   text->setX(x);
 }
@@ -169,7 +154,8 @@ void MovieTimelineWidget::SetScale(int scale)
   }
 
   m_scale = scale;
-  m_cursorLineItem->setRect(0, s_measureHeight, scale, s_height - s_measureHeight);
+  // m_cursorLineItem->setRect(0, s_markerHeight, scale, s_height - s_markerHeight);
+  m_cursorMarker->SetScale(scale);
   // measure lines have to be redrawn
   qDeleteAll(m_measureLineItems);
   m_measureLineItems.clear();
@@ -177,12 +163,23 @@ void MovieTimelineWidget::SetScale(int scale)
 
 
   /// TODO
-  // scale state lines and rects
+  // scale state markers
 
 
 
   Update();
 }
+
+int MovieTimelineWidget::GetScale()
+{
+  return m_scale;
+}
+
+int MovieTimelineWidget::GetWidth()
+{
+  return m_width;
+}
+
 
 void MovieTimelineWidget::UpdateSceneRect()
 {
@@ -208,7 +205,7 @@ void MovieTimelineWidget::UpdateMovie()
 
 void MovieTimelineWidget::UpdateMeasureLines()
 {
-  QRectF rect(0, 0, m_scale, s_measureHeight);
+  QRectF rect(0, 0, m_scale, s_markerHeight);
   QGraphicsRectItem* item;
   int i = m_measureLineItems.length();
   // expand list of measure lines to fill the sceneRect but at least the view
@@ -235,21 +232,15 @@ void MovieTimelineWidget::UpdateMeasureLines()
 
 void MovieTimelineWidget::UpdateCursor()
 {
-  m_cursorTextItem->setText(QString::number(Movie::GetCurrentFrame()));
-
   int cursor = Movie::GetCurrentFrame() * m_scale;
-  m_cursorLineItem->setX(cursor);
-  // adjust rect and cursor
-  MakeBoxedText(m_cursorRectItem, m_cursorTextItem, &cursor);
-  m_cursorRectItem->setX(cursor);
-  m_cursorTextItem->setX(cursor);
+  m_cursorMarker->SetText(QString::number(Movie::GetCurrentFrame()));
+  m_cursorMarker->setX(cursor);
 
   // if cursor position didnt change dont scroll
   if (Movie::GetCurrentFrame() == m_previousFrame)
   {
     return;
   }
-
   int cursorL = cursor - s_padding;
   int cursorR = cursor + s_padding;
   int viewWidth = m_width - horizontalScrollBar()->maximum();
@@ -265,26 +256,112 @@ void MovieTimelineWidget::UpdateCursor()
   }
 }
 
-void MovieTimelineWidget::MakeBoxedText(QGraphicsRectItem* box,
-    QGraphicsSimpleTextItem* text, int* xPos)
+////////////////////////
+////////////////////////
+///// class Marker /////
+////////////////////////
+////////////////////////
+
+Marker::Marker(MovieTimelineWidget *timeline = nullptr) : QGraphicsItem(nullptr)
 {
-  int width = qFloor(text->boundingRect().width());
-  *xPos = qMax(2, *xPos - width / 2 + m_scale / 2);
+  m_timeline = timeline;
+  m_lineUpperItem = new QGraphicsRectItem(this);
+  m_lineLowerItem = new QGraphicsRectItem(this);
+  m_rectItem = new QGraphicsRectItem(this);
+  m_textItem = new QGraphicsSimpleTextItem(this);
+  m_textItem->setFont(QFont(QStringLiteral(""), s_markerHeight - 4, 3));
+
+  SetScale(m_timeline->GetScale());
+  SetLevel(0);
+  SetText(QString());
+}
+
+Marker::~Marker()
+{
+  delete m_lineUpperItem;
+  delete m_lineLowerItem;
+  delete m_rectItem;
+  delete m_textItem;
+}
+
+void Marker::SetScale(int scale)
+{
+  // adjust width of lines
+  QRectF r;
+  // upper line
+  r = m_lineUpperItem->rect();
+  r.setWidth(scale);
+  m_lineUpperItem->setRect(r);
+  // lower line
+  r = m_lineLowerItem->rect();
+  r.setWidth(scale);
+  m_lineLowerItem->setRect(r);
+}
+
+void Marker::SetLevel(int level)
+{
+  // adjust yPos and height of items
+  QRectF r;
+  // upper line
+  r = m_lineUpperItem->rect();
+  r.setY(0);
+  r.setHeight(level * s_markerHeight);
+  m_lineUpperItem->setRect(r);
+  // lower line
+  r = m_lineLowerItem->rect();
+  r.setY((level + 1) * s_markerHeight);
+  r.setHeight(s_height - (level + 1) * s_markerHeight);
+  m_lineLowerItem->setRect(r);
+  // rect
+  r = m_rectItem->rect();
+  r.setY(level * s_markerHeight + 1);
+  r.setHeight(s_markerHeight - 1);
+  m_rectItem->setRect(r);
+  // text
+  m_textItem->setY(level * s_markerHeight - 1);
+}
+
+void Marker::SetText(const QString& text)
+{
+  m_textItem->setText(text);
+  // adjust xPos of text and rect
+  // boxed text should be centered ...
+  int width = qFloor(m_textItem->boundingRect().width());
+  int xPos = -width / 2 + m_timeline->GetScale() / 2 - 3;
+  // ... but never over the left scene border
+  if (x() < -xPos)
+  {
+    xPos = -x();
+  }
+  m_rectItem->setX(xPos);
+  m_textItem->setX(xPos + 3);
+  // adjust rect width
   width += 6;
-  QRectF rect(-3, box->rect().y(), width, s_measureHeight - 1);
-  box->setRect(rect);
+  QRectF rect = m_rectItem->rect();
+  rect.setWidth(width);
+  m_rectItem->setRect(rect);
 }
 
-MovieTimelineWidget::Marker::Marker(QGraphicsItem *parent = nullptr) : QGraphicsItem(parent)
+void Marker::SetColor(const QColor& color)
 {
-  m_LineItem = new QGraphicsRectItem(this);
-  m_RectItem = new QGraphicsRectItem(this);
-  m_TextItem = new QGraphicsSimpleTextItem(this);
+  m_lineUpperItem->setPen(QPen(color));
+  m_lineUpperItem->setBrush(QBrush(color));
+  m_lineLowerItem->setPen(QPen(color));
+  m_lineLowerItem->setBrush(QBrush(color));
+  m_rectItem->setPen(QPen(QBrush(color), 2));
+  m_rectItem->setBrush(QBrush(QColor(QStringLiteral("transparent"))));
+  m_textItem->setPen(QPen(color));
+  m_textItem->setBrush(QBrush(color));
 }
 
-MovieTimelineWidget::Marker::~Marker()
+QRectF Marker::boundingRect() const
 {
-  delete m_LineItem;
-  delete m_RectItem;
-  delete m_TextItem;
+  QRectF br = m_rectItem->boundingRect();
+  return QRectF(br.x(), 0, br.width(), s_height);
+}
+
+void Marker::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
+    QWidget *widget)
+{
+  // not needed as paint() will delegate to children (i.e. line, rect and text items)
 }

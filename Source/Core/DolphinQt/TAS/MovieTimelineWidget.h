@@ -9,6 +9,7 @@
 
 #include "Common/CommonTypes.h"
 
+class Marker;
 class QGraphicsScene;
 class QGraphicsPixmapItem;
 class QGraphicsRectItem;
@@ -31,6 +32,8 @@ public:
   void AddStateSlot(int slot, int frame);
   void Update();
   void SetScale(int scale);
+  int GetScale();
+  int GetWidth();
 
 private:
   void UpdateSceneRect();
@@ -38,15 +41,16 @@ private:
   void UpdateMeasureLines();
   void UpdateCursor();
 
-  void MakeBoxedText(QGraphicsRectItem* box, QGraphicsSimpleTextItem* text, int* xPos);
+  // void MakeBoxedText(QGraphicsRectItem* box, QGraphicsSimpleTextItem* text, int* xPos);
 
   QGraphicsScene* m_scene;
   QGraphicsRectItem* m_movieItem;
   QList<QGraphicsRectItem*> m_measureLineItems;
 
-  QGraphicsRectItem* m_cursorLineItem;
-  QGraphicsRectItem* m_cursorRectItem;
-  QGraphicsSimpleTextItem* m_cursorTextItem;
+  // QGraphicsRectItem* m_cursorMarkerLineItem;
+  // QGraphicsRectItem* m_cursorMarkerRectItem;
+  // QGraphicsSimpleTextItem* m_cursorMarkerTextItem;
+  Marker* m_cursorMarker;
 
   QMap<int, QGraphicsRectItem*> m_stateSlotLineItems;
   QMap<int, QGraphicsRectItem*> m_stateSlotRectItems;
@@ -57,20 +61,29 @@ private:
   u64 m_previousFrame;
 
   QList<StateLine> m_stateLines;
+};
 
   
-  class Marker : public QGraphicsItem
-  {
-  public:
-    Marker(QGraphicsItem *parent);
-    ~Marker();
+class Marker : public QGraphicsItem
+{
+public:
+  Marker(MovieTimelineWidget *timeline);
+  ~Marker();
 
-  private:
-    void MakeBoxedText(QGraphicsRectItem* box, QGraphicsSimpleTextItem* text, int* xPos);
+  void SetScale(int scale);
+  void SetLevel(int level);
+  void SetText(const QString& text);
+  void SetColor(const QColor& color);
 
-    QGraphicsRectItem* m_LineItem;
-    QGraphicsRectItem* m_RectItem;
-    QGraphicsSimpleTextItem* m_TextItem;
-  };
+  QRectF boundingRect() const override;
+  void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
+      QWidget *widget = 0) override;
 
+private:
+  MovieTimelineWidget* m_timeline;
+
+  QGraphicsRectItem* m_lineUpperItem;
+  QGraphicsRectItem* m_lineLowerItem;
+  QGraphicsRectItem* m_rectItem;
+  QGraphicsSimpleTextItem* m_textItem;
 };
