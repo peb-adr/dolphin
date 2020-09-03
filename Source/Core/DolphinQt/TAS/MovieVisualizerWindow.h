@@ -3,37 +3,69 @@
 #pragma once
 
 #include <QDialog>
+#include <QList>
 
 #include "Common/CommonTypes.h"
 
-class QDialog;
+class QLabel;
 class QPlainTextEdit;
+class QRegExp;
+class QSpinBox;
+class QTimer;
 class QWidget;
-class QPainter;
 
-enum StateOp
+class MovieTimelineWidget;
+
+// So the whole request thing is done to accurately capture the frame the state
+// save happened.
+// A state save call from MainWindow is buffered as a StateSaveRequest and then
+// confirmed later by the "Saved State to ..." message
+struct StateSaveRequest
 {
-  LOAD,
-  SAVE,
+  int frame;
+  bool isSlot;
+  QString name;
+  int slot;
+  QString confirmingMessage;
 };
 
 class MovieVisualizerWindow : public QDialog
 {
-  Q_OBJECT
 public:
-  explicit MovieVisualizerWindow(QWidget* parent);
+  MovieVisualizerWindow(QWidget* parent);
 
-  void paint();
-  void FrameUpdate();
-  void StateLoad(QString path);
-  void StateSave(QString path);
-  void StateLoadSlot(int slot);
-  void StateSaveSlot(int slot);
+  void Update();
+  // LogWidget* GetLogWidget();
+
+  void OnUpdateTitle(const QString& title);
+  void StateLoad(const QString& path);
+  void StateSave(const QString& path);
+  void StateLoadSlotAt(int slot);
+  void StateSaveSlotAt(int slot);
+  void StateLoadLastSavedAt(int slot);
+  void StateLoadUndo();
+  void StateSaveUndo();
+  void StateSaveOldest();
+  // void SetStateSlot(int slot);
 
 private:
-  void AppendStateLogMessage(StateOp op, QString subject);
+  void UpdateRwModeIndicator();
+  void AppendLogMessage(const QString& message);
+  void Connect();
+  void RequestStateSave(bool isSlot, const QString& name, int slot, const QString& path);
+  void ConfirmStateSave(const QString& message);
 
+  QTimer* m_timer;
+  QSpinBox* m_updateIntervalChooser;
+  QSpinBox* m_scaleChooser;
+  QLabel* m_rwModeIndicator;
+  MovieTimelineWidget* m_timeline;
   QPlainTextEdit* m_log;
-  QWidget* m_timeline;
-  QPainter* m_timeline_painter;
+
+  QList<StateSaveRequest> m_stateSaveRequests;
+
+  // TODO
+  // QStringList logBlackList
+  // QStringList logWhiteList
+  QRegExp* m_regexStateSlotPath;
 };
