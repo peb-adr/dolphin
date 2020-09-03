@@ -26,22 +26,11 @@
 #include "DolphinQt/Host.h"
 #include "DolphinQt/TAS/MovieTimelineWidget.h"
 
-//
-// QString::fromStdString
-//
-// static const QRegularExpression s_regexState(
-//     QString((File::GetUserPath(D_STATESAVES_IDX) +
-//     SConfig::GetInstance().GetGameID() +
-//     "\\.\\d\\d").c_str()));
-
-static const int s_requestStateSaveBufferSize = 4;
+static const int s_requestStateSaveBufferSize =10;
 
 MovieVisualizerWindow::MovieVisualizerWindow(QWidget* parent) : QDialog(parent)
 {
   setWindowTitle(tr("Movie Visualizer"));
-  // m_regexStateSlotPath = new QRegExp(tr(fmt::format("{}{}\\.s\\d\\d",
-  //     File::GetUserPath(D_STATESAVES_IDX),
-  //     SConfig::GetInstance().GetGameID()).c_str()));
   QString path = tr(File::GetUserPath(D_STATESAVES_IDX).c_str());
   m_regexStateSlotPath = new QRegExp(QRegExp::escape(path) + tr("\\w{6}\\.s\\d\\d"));
 
@@ -93,23 +82,9 @@ void MovieVisualizerWindow::Update()
 
   m_timeline->Update();
 
-  //
-  // DEBUG OUTPUT
-  //
-
   // DEBUG
   // std::cout << SConfig::GetInstance().GetGameID() << " | " <<  "asd" << std::endl;
   // DEBUG END
-
-  // QRectF r1 = m_timeline->sceneRect();
-  // QRectF r2 = m_timeline->m_scene->sceneRect();
-  // QString s1 = tr("%1 %2 %3 %4").arg(QString::number(r1.x()), QString::number(r1.y()), QString::number(r1.width()), QString::number(r1.height()));
-  // QString s2 = tr("%1 %2 %3 %4").arg(QString::number(r2.x()), QString::number(r2.y()), QString::number(r2.width()), QString::number(r2.height()));
-  // AppendLogMessage(tr("%1 | %2").arg(s1, s2));
-
-  //
-  // DEBUG OUTPUT END
-  //
 }
 
 void MovieVisualizerWindow::OnUpdateTitle(const QString& title)
@@ -187,8 +162,7 @@ void MovieVisualizerWindow::RequestStateSave(bool isSlot, const QString& name,
 {
   if (m_stateSaveRequests.size() == s_requestStateSaveBufferSize)
   {
-    // m_stateSaveRequests.removeFirst();
-    return;
+    m_stateSaveRequests.removeFirst();
   }
 
   StateSaveRequest request;
@@ -243,9 +217,10 @@ void MovieVisualizerWindow::StateLoadSlotAt(int slot)
 void MovieVisualizerWindow::StateSaveSlotAt(int slot)
 {
   AppendLogMessage(tr("StateDebug"));
+  // unfortunately MakeStateFilename() from Core/State.cpp is not available here
   QString path = tr(fmt::format("{}{}.s{:02d}", File::GetUserPath(D_STATESAVES_IDX),
       SConfig::GetInstance().GetGameID(), slot).c_str());
-  RequestStateSave(true, tr("[ Slot %1 ]").arg(slot), slot, path);
+  RequestStateSave(true, tr("never give up"), slot, path);
 }
 
 void MovieVisualizerWindow::StateLoadLastSavedAt(int slot)
