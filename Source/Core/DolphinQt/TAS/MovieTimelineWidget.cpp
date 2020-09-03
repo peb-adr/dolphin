@@ -13,6 +13,7 @@
 #include <QFont>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
+#include <QPainterPath>
 #include <QPen>
 #include <QPixmap>
 #include <QRectF>
@@ -45,6 +46,7 @@ static const QPen s_measureOddPen(QColor(QStringLiteral("#ccc")));
 static const QBrush s_measureOddBrush(QColor(QStringLiteral("#ccc")));
 
 static const QColor s_cursorColor(QStringLiteral("#07c"));
+static const QColor s_stateSlotColor(QStringLiteral("#000"));
 
 static const QPen s_stateLinePen(QColor(QStringLiteral("#000")));
 static const QBrush s_stateLineBrush(QColor(QStringLiteral("#000")));
@@ -89,43 +91,44 @@ void MovieTimelineWidget::AddState(const QString& name, int frame)
 
 void MovieTimelineWidget::AddStateSlot(int slot, int frame)
 {
-  QGraphicsRectItem* line;
-  QGraphicsRectItem* rect;
-  QGraphicsSimpleTextItem* text;
+  Marker* marker;
 
-  if (!m_stateSlotLineItems.contains(slot))
+  if (!m_stateSlotMarkers.contains(slot))
   {
-    // line item
-    line = m_scene->addRect(0, s_markerHeight, m_scale, s_height - 2 * s_markerHeight);
-    line->setPen(s_stateLinePen);
-    line->setBrush(s_stateLineBrush);
-    m_stateSlotLineItems.insert(slot, line);
-    // rect item
-    rect = m_scene->addRect(0, s_height - s_markerHeight, 20, s_markerHeight - 1);
-    rect->setPen(s_stateRectPen);
-    rect->setBrush(s_stateRectBrush);
-    m_stateSlotRectItems.insert(slot, rect);
-    // text item
-    text = m_scene->addSimpleText(QString::number(slot));
-    text->setFont(QFont(QStringLiteral(""), s_markerHeight - 4, 3));
-    text->setY(s_height - s_markerHeight + (s_markerHeight - ((int) text->boundingRect().height())) / 2);
-    text->setPen(s_stateTextPen);
-    text->setBrush(s_stateTextBrush);
-    m_stateSlotTextItems.insert(slot, text);
-    // set z value
-    line->setZValue(-3);
-    rect->setZValue(-3);
-    text->setZValue(-3);
+    marker = new Marker(this);
+    marker->SetText(QString::number(slot));
+    marker->SetColor(s_stateSlotColor);
+    marker->setZValue(-3);
+    m_scene->addItem(marker);
+    m_stateSlotMarkers.insert(slot, marker);
   }
 
-  line = m_stateSlotLineItems.value(slot);
-  rect = m_stateSlotRectItems.value(slot);
-  text = m_stateSlotTextItems.value(slot);
-  int x = frame * m_scale;
-  line->setX(x);
-  // MakeBoxedText(rect, text, &x);
-  rect->setX(x);
-  text->setX(x);
+  marker = m_stateSlotMarkers.value(slot);
+  marker->setX(frame * m_scale);
+
+  bool collides = true;
+  int l = 2;
+
+  while(collides) {
+    marker->SetLevel(l++);
+    
+    collides = false;
+    QMap<int, Marker*>::iterator i;
+    for (i = m_stateSlotMarkers.begin(); !collides && i != m_stateSlotMarkers.end(); ++i)
+    {
+      if (marker != i.value())
+      {
+        collides = marker->collidesWithItem(i.value());
+      }
+    }
+    for (i = m_stateMarkers.begin(); !collides && i != m_stateMarkers.end(); ++i)
+    {
+      if (marker != i.value())
+      {
+        collides = marker->collidesWithItem(i.value());
+      }
+    }
+  }
 }
 
 
@@ -154,17 +157,15 @@ void MovieTimelineWidget::SetScale(int scale)
   }
 
   m_scale = scale;
-  // m_cursorLineItem->setRect(0, s_markerHeight, scale, s_height - s_markerHeight);
-  m_cursorMarker->SetScale(scale);
+
   // measure lines have to be redrawn
   qDeleteAll(m_measureLineItems);
   m_measureLineItems.clear();
 
-
+  m_cursorMarker->SetScale(scale);
 
   /// TODO
   // scale state markers
-
 
 
   Update();
@@ -212,8 +213,6 @@ void MovieTimelineWidget::UpdateMeasureLines()
   int w = qMax(m_width, width() - 2 * frameWidth());
   while(m_measureLineItems.length() * m_scale < w) {
     item = m_scene->addRect(rect);
-    item->setZValue(-2);
-    item->setX(i * m_scale);
     if (i % (2 * s_measureInterval) < s_measureInterval)
     {
       item->setPen(s_measureEvenPen);
@@ -224,9 +223,9 @@ void MovieTimelineWidget::UpdateMeasureLines()
       item->setPen(s_measureOddPen);
       item->setBrush(s_measureOddBrush);
     }
+    item->setZValue(-2);
+    item->setX(i++ * m_scale);
     m_measureLineItems.append(item);
-
-    i += 1;
   }
 }
 
@@ -264,6 +263,8 @@ void MovieTimelineWidget::UpdateCursor()
 
 Marker::Marker(MovieTimelineWidget *timeline = nullptr) : QGraphicsItem(nullptr)
 {
+  m_previousPos = QPointF(0, 0);
+
   m_timeline = timeline;
   m_lineUpperItem = new QGraphicsRectItem(this);
   m_lineLowerItem = new QGraphicsRectItem(this);
@@ -324,22 +325,7 @@ void Marker::SetLevel(int level)
 void Marker::SetText(const QString& text)
 {
   m_textItem->setText(text);
-  // adjust xPos of text and rect
-  // boxed text should be centered ...
-  int width = qFloor(m_textItem->boundingRect().width());
-  int xPos = -width / 2 + m_timeline->GetScale() / 2 - 3;
-  // ... but never over the left scene border
-  if (x() < -xPos)
-  {
-    xPos = -x();
-  }
-  m_rectItem->setX(xPos);
-  m_textItem->setX(xPos + 3);
-  // adjust rect width
-  width += 6;
-  QRectF rect = m_rectItem->rect();
-  rect.setWidth(width);
-  m_rectItem->setRect(rect);
+  RecalculateTextBoxPos();
 }
 
 void Marker::SetColor(const QColor& color)
@@ -354,6 +340,26 @@ void Marker::SetColor(const QColor& color)
   m_textItem->setBrush(QBrush(color));
 }
 
+void Marker::RecalculateTextBoxPos()
+{
+  int width = qFloor(m_textItem->boundingRect().width());
+  // adjust xPos of text and rect
+  // boxed text should be centered ...
+  int xPos = -width / 2 + m_timeline->GetScale() / 2 - 3;
+  // ... but never go over the left scene border
+  if (x() < -xPos)
+  {
+    xPos = -x();
+  }
+  m_rectItem->setX(xPos);
+  m_textItem->setX(xPos + 3);
+  // adjust rect width
+  width += 6;
+  QRectF rect = m_rectItem->rect();
+  rect.setWidth(width);
+  m_rectItem->setRect(rect);
+}
+
 QRectF Marker::boundingRect() const
 {
   QRectF br = m_rectItem->boundingRect();
@@ -363,5 +369,16 @@ QRectF Marker::boundingRect() const
 void Marker::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     QWidget *widget)
 {
-  // not needed as paint() will delegate to children (i.e. line, rect and text items)
+  if (pos() != m_previousPos)
+  {
+    RecalculateTextBoxPos();
+  }
+  m_previousPos = pos();
+}
+
+QPainterPath Marker::shape() const
+{
+  QPainterPath path;
+  path.addRect(m_rectItem->rect());
+  return path;
 }
