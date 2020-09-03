@@ -149,7 +149,6 @@ void Host_NotifyMapLoaded()
 // UpdateMainFrame should almost certainly be removed.
 void Host_UpdateMainFrame()
 { 
-  emit Host::GetInstance()->UpdateMainFrame();
 }
 
 void Host_RequestRenderWindowSize(int w, int h)
