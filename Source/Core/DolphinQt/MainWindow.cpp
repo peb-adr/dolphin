@@ -280,6 +280,8 @@ MainWindow::~MainWindow()
     delete m_wii_tas_input_windows[i];
   }
 
+  delete m_movie_visualizer_window;
+
   ShutdownControllers();
 
   QSettings& settings = Settings::GetQSettings();
@@ -636,7 +638,6 @@ void MainWindow::ConnectRenderWidget()
 void MainWindow::ConnectHost()
 {
   connect(Host::GetInstance(), &Host::RequestStop, this, &MainWindow::RequestStop);
-  connect(Host::GetInstance(), &Host::UpdateMainFrame, this, &MainWindow::RequestStop);
 }
 
 void MainWindow::ConnectStack()
@@ -1224,48 +1225,56 @@ void MainWindow::StateLoadSlot()
 {
   State::Load(m_state_slot);
 
-  m_movie_visualizer_window->StateLoadSlot(m_state_slot);
+  m_movie_visualizer_window->StateLoadSlotAt(m_state_slot);
 }
 
 void MainWindow::StateSaveSlot()
 {
   State::Save(m_state_slot);
 
-  m_movie_visualizer_window->StateSaveSlot(m_state_slot);
+  m_movie_visualizer_window->StateSaveSlotAt(m_state_slot);
 }
 
 void MainWindow::StateLoadSlotAt(int slot)
 {
   State::Load(slot);
 
-  m_movie_visualizer_window->StateLoadSlot(slot);
+  m_movie_visualizer_window->StateLoadSlotAt(slot);
 }
 
 void MainWindow::StateLoadLastSavedAt(int slot)
 {
   State::LoadLastSaved(slot);
+
+  m_movie_visualizer_window->StateLoadLastSavedAt(slot);
 }
 
 void MainWindow::StateSaveSlotAt(int slot)
 {
   State::Save(slot);
 
-  m_movie_visualizer_window->StateSaveSlot(slot);
+  m_movie_visualizer_window->StateSaveSlotAt(slot);
 }
 
 void MainWindow::StateLoadUndo()
 {
   State::UndoLoadState();
+
+  m_movie_visualizer_window->StateLoadUndo();
 }
 
 void MainWindow::StateSaveUndo()
 {
   State::UndoSaveState();
+
+  m_movie_visualizer_window->StateSaveUndo();
 }
 
 void MainWindow::StateSaveOldest()
 {
   State::SaveFirstSaved();
+
+  m_movie_visualizer_window->StateSaveOldest();
 }
 
 void MainWindow::SetStateSlot(int slot)
