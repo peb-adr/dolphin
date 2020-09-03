@@ -187,7 +187,8 @@ void MovieVisualizerWindow::RequestStateSave(bool isSlot, const QString& name,
 {
   if (m_stateSaveRequests.size() == s_requestStateSaveBufferSize)
   {
-    m_stateSaveRequests.removeFirst();
+    // m_stateSaveRequests.removeFirst();
+    return;
   }
 
   StateSaveRequest request;
