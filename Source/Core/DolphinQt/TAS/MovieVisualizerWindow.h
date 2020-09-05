@@ -18,7 +18,7 @@ class MovieTimelineWidget;
 
 // So the whole request thing is done to accurately capture the frame the state
 // save happened.
-// A state save call from MainWindow is buffered as a StateSaveRequest and then
+// A state save call from MainWindow is buffered in m_stateSaveRequests and then
 // confirmed later by the "Saved State to ..." message
 struct StateSaveRequest
 {

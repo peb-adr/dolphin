@@ -18,10 +18,21 @@ class QRectF;
 
 struct StateLine
 {
-  const QString& label;
+  QString label;
   int frame;
   Marker* marker;
 };
+
+struct StateInfo
+{
+  // -1 for non slot state
+  int slot;
+  QString path;
+  QString label;
+  int frame;
+  u64 timestamp;
+};
+
 
 class MovieTimelineWidget : public QGraphicsView
 {
@@ -29,17 +40,13 @@ public:
   MovieTimelineWidget(QWidget* parent);
 
   // void AddStateLine(StateLine state);
-  void AddState(const QString& name, int frame);
+  void AddState(const QString& path, int frame);
   void AddStateSlot(int slot, int frame);
   void Update();
   void SetScale(int scale);
   int GetScale();
   int GetWidth();
-  int GetHeight();  // if (pos() != m_previousPos)
-  // {
-  //   RecalculateTextBoxPos();
-  // }
-  // m_previousPos = pos();
+  int GetHeight();
   void resizeEvent(QResizeEvent *event) override;
 
 private:
@@ -53,8 +60,8 @@ private:
   QList<QGraphicsRectItem*> m_measureLineItems;
 
   Marker* m_cursorMarker;
-  QMap<int, StateLine> m_stateSlotMarkers;
-  QMap<int, StateLine> m_stateMarkers;
+  QMap<int, StateLine> m_slotStateLines;
+  QMap<QString, StateLine> m_stateLines;
 
   int m_scale;
   int m_width;

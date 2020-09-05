@@ -10,6 +10,7 @@
 
 #include <QBrush>
 #include <QColor>
+#include <QFileInfo>
 #include <QFont>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
@@ -45,6 +46,7 @@ static const QBrush s_measureOddBrush(QColor(QStringLiteral("#ccc")));
 
 static const QColor s_cursorColor(QStringLiteral("#07c"));
 static const QColor s_stateSlotColor(QStringLiteral("#333"));
+static const QColor s_stateColor(QStringLiteral("#373"));
 
 MovieTimelineWidget::MovieTimelineWidget(QWidget* parent) : QGraphicsView(parent)
 {
@@ -69,7 +71,7 @@ MovieTimelineWidget::MovieTimelineWidget(QWidget* parent) : QGraphicsView(parent
 
   // Setup GraphicsItems
   m_movieItem = m_scene->addRect(0, 0, 0, m_height);
-  m_movieItem->setZValue(-4);
+  m_movieItem->setZValue(-5);
   m_cursorMarker = new Marker(this);
   m_cursorMarker->SetColor(s_cursorColor);
   m_cursorMarker->SetBaseHeight(0);
@@ -78,58 +80,91 @@ MovieTimelineWidget::MovieTimelineWidget(QWidget* parent) : QGraphicsView(parent
   m_scene->addItem(m_cursorMarker);
 }
 
-void MovieTimelineWidget::AddState(const QString& name, int frame)
-{
-  // TODO!
-}
-
-void MovieTimelineWidget::AddStateSlot(int slot, int frame)
+void MovieTimelineWidget::AddState(const QString& path, int frame)
 {
   Marker* marker;
 
-  if (!m_stateSlotMarkers.contains(slot))
+  if (!m_stateLines.contains(path))
   {
     marker = new Marker(this);
-    marker->SetText(QString::number(slot));
-    marker->SetColor(s_stateSlotColor);
-    // marker->SetBaseHeight(2 * s_markerHeight);
-    marker->SetBaseHeight(6 * s_markerHeight);
+    marker->SetText(QFileInfo(path).baseName());
+    marker->SetColor(s_stateColor);
+    marker->SetBaseHeight(m_height - s_markerHeight - 5);
     marker->SetLevelHeight(s_markerHeight);
-    marker->setZValue(-3);
+    marker->setZValue(-4);
     m_scene->addItem(marker);
 
-    // StateLine line;
-    // line.label = QString::number(slot);
-    // line.frame = frame;
-    // line.marker = marker;
-    
-    m_stateSlotMarkers.insert(slot, marker);
+    StateLine line;
+    line.label = QFileInfo(path).baseName();
+    line.frame = frame;
+    line.marker = marker;
+
+    m_stateLines.insert(path, line);
   }
 
-  marker = m_stateSlotMarkers.value(slot);
+  // FUCXK THIS
+  // m_stateLines.value(path).frame = frame;
+  marker = m_stateLines.value(path).marker;
   marker->setX(frame * m_scale);
 
   bool collides = true;
   int l = 0;
 
   while(collides) {
-    // marker->SetLevel(l++);
     marker->SetLevel(l--);
     
     collides = false;
-    QMap<int, Marker*>::iterator i;
-    for (i = m_stateSlotMarkers.begin(); !collides && i != m_stateSlotMarkers.end(); ++i)
+    QMap<QString, StateLine>::iterator i;
+    for (i = m_stateLines.begin(); !collides && i != m_stateLines.end(); ++i)
     {
-      if (marker != i.value())
+      if (marker != i.value().marker)
       {
-        collides = marker->collidesWithItem(i.value());
+        collides = marker->collidesWithItem(i.value().marker);
       }
     }
-    for (i = m_stateMarkers.begin(); !collides && i != m_stateMarkers.end(); ++i)
+  }
+}
+
+void MovieTimelineWidget::AddStateSlot(int slot, int frame)
+{
+  Marker* marker;
+
+  if (!m_slotStateLines.contains(slot))
+  {
+    marker = new Marker(this);
+    marker->SetText(QString::number(slot));
+    marker->SetColor(s_stateSlotColor);
+    marker->SetBaseHeight(2 * s_markerHeight);
+    marker->SetLevelHeight(s_markerHeight);
+    marker->setZValue(-3);
+    m_scene->addItem(marker);
+
+    StateLine line;
+    line.label = QString::number(slot);
+    line.frame = frame;
+    line.marker = marker;
+
+    m_slotStateLines.insert(slot, line);
+  }
+
+  // SHIT IM OUT
+  // m_slotStateLines.value(slot).frame = frame;
+  marker = m_slotStateLines.value(slot).marker;
+  marker->setX(frame * m_scale);
+
+  bool collides = true;
+  int l = 0;
+
+  while(collides) {
+    marker->SetLevel(l++);
+    
+    collides = false;
+    QMap<int, StateLine>::iterator i;
+    for (i = m_slotStateLines.begin(); !collides && i != m_slotStateLines.end(); ++i)
     {
-      if (marker != i.value())
+      if (marker != i.value().marker)
       {
-        collides = marker->collidesWithItem(i.value());
+        collides = marker->collidesWithItem(i.value().marker);
       }
     }
   }
@@ -169,15 +204,17 @@ void MovieTimelineWidget::SetScale(int scale)
 
   m_cursorMarker->SetScale(scale);
 
-  /// TODO
   // scale state markers
-
-  QMap<int, Marker*>::iterator i;
-  for (i = m_stateSlotMarkers.begin(); i != m_stateSlotMarkers.end(); ++i)
+  for (QMap<int, StateLine>::iterator i = m_slotStateLines.begin(); i != m_slotStateLines.end(); ++i)
   {
-    i.value()->SetScale(scale);
+    i.value().marker->setX(i.value().frame * scale);
+    i.value().marker->SetScale(scale);
   }
-
+  for (QMap<QString, StateLine>::iterator i = m_stateLines.begin(); i != m_stateLines.end(); ++i)
+  {
+    i.value().marker->setX(i.value().frame * scale);
+    i.value().marker->SetScale(scale);
+  }
 
   Update();
 }
@@ -201,15 +238,14 @@ void MovieTimelineWidget::resizeEvent(QResizeEvent *event)
 {
   m_height = height() - 2 * frameWidth();
   m_cursorMarker->RecalculateVertical();
-  QMap<int, Marker*>::iterator i;
-  for (i = m_stateSlotMarkers.begin(); i != m_stateSlotMarkers.end(); ++i)
+  for (QMap<int, StateLine>::iterator i = m_slotStateLines.begin(); i != m_slotStateLines.end(); ++i)
   {
-    // i.value()->SetBaseHeight(m_height - 10);
-    i.value()->RecalculateVertical();
+    i.value().marker->RecalculateVertical();
   }
-  for (i = m_stateMarkers.begin(); i != m_stateMarkers.end(); ++i)
+  for (QMap<QString, StateLine>::iterator i = m_stateLines.begin(); i != m_stateLines.end(); ++i)
   {
-    i.value()->RecalculateVertical();
+    i.value().marker->SetBaseHeight(m_height - s_markerHeight - 5);
+    i.value().marker->RecalculateVertical();
   }
 }
 
@@ -285,6 +321,7 @@ void MovieTimelineWidget::UpdateCursor()
     horizontalScrollBar()->setValue(cursorR - viewWidth);
   }
 }
+
 
 ////////////////////////
 ////////////////////////

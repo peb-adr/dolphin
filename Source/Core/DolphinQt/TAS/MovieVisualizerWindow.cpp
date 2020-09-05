@@ -6,7 +6,6 @@
 #include <iostream>
 // DEBUG END
 
-#include <QFileInfo>
 #include <QLabel>
 #include <QPlainTextEdit>
 #include <QRegExp>
@@ -168,7 +167,7 @@ void MovieVisualizerWindow::RequestStateSave(bool isSlot, const QString& name,
   StateSaveRequest request;
   request.frame = Movie::GetCurrentFrame();
   request.isSlot = isSlot;
-  request.name = name;
+  request.name = path;
   request.slot = slot;
   request.confirmingMessage = tr("Saved State to %1").arg(path);
 
@@ -206,7 +205,7 @@ void MovieVisualizerWindow::StateLoad(const QString& path)
 void MovieVisualizerWindow::StateSave(const QString& path)
 {
   AppendLogMessage(tr("StateDebug"));
-  RequestStateSave(false, QFileInfo(path).baseName(), 42, path);
+  RequestStateSave(false, path, 42, path);
 }
 
 void MovieVisualizerWindow::StateLoadSlotAt(int slot)
