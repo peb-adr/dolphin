@@ -20,6 +20,7 @@ struct StateLine
 {
   const QString& label;
   int frame;
+  Marker* marker;
 };
 
 class MovieTimelineWidget : public QGraphicsView
@@ -34,6 +35,12 @@ public:
   void SetScale(int scale);
   int GetScale();
   int GetWidth();
+  int GetHeight();  // if (pos() != m_previousPos)
+  // {
+  //   RecalculateTextBoxPos();
+  // }
+  // m_previousPos = pos();
+  void resizeEvent(QResizeEvent *event) override;
 
 private:
   void UpdateSceneRect();
@@ -46,11 +53,12 @@ private:
   QList<QGraphicsRectItem*> m_measureLineItems;
 
   Marker* m_cursorMarker;
-  QMap<int, Marker*> m_stateSlotMarkers;
-  QMap<int, Marker*> m_stateMarkers;
+  QMap<int, StateLine> m_stateSlotMarkers;
+  QMap<int, StateLine> m_stateMarkers;
 
   int m_scale;
   int m_width;
+  int m_height;
   u64 m_previousFrame;
 };
 
@@ -61,10 +69,14 @@ public:
   Marker(MovieTimelineWidget *timeline);
   ~Marker();
 
-  void SetScale(int scale);
-  void SetLevel(int level);
-  void SetText(const QString& text);
   void SetColor(const QColor& color);
+  void SetText(const QString& text);
+  void SetBaseHeight(int baseHeight);
+  void SetLevelHeight(int levelHeight);
+  void SetLevel(int level);
+  void SetScale(int scale);
+  void RecalculateHorizontal();
+  void RecalculateVertical();
 
   QRectF boundingRect() const override;
   void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
@@ -72,8 +84,6 @@ public:
   QPainterPath shape() const override;
 
 private:
-  void RecalculateTextBoxPos();
-
   MovieTimelineWidget* m_timeline;
 
   QGraphicsRectItem* m_lineUpperItem;
@@ -81,5 +91,8 @@ private:
   QGraphicsRectItem* m_rectItem;
   QGraphicsSimpleTextItem* m_textItem;
 
+  int m_baseHeight;
+  int m_levelHeight;
+  int m_level;
   QPointF m_previousPos;
 };
