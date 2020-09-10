@@ -26,10 +26,10 @@ struct StateInfo
   u64 timestamp;
 };
 
-struct StateLine
+enum MarkerData
 {
-  StateInfo* info;
-  Marker* marker;
+  FRAME,
+  TIMESTAMP
 };
 
 
@@ -39,9 +39,7 @@ public:
   MovieTimelineWidget(QWidget* parent);
   ~MovieTimelineWidget();
 
-  void AddState(StateInfo* info);
-  // void AddState(const QString& path, int frame);
-  // void AddStateSlot(int slot, int frame);
+  void AddState(const StateInfo& info);
   void Update();
   void SetScale(int scale);
   int GetScale();
@@ -58,10 +56,10 @@ private:
   QGraphicsScene* m_scene;
   QGraphicsRectItem* m_movieItem;
   QList<QGraphicsRectItem*> m_measureLineItems;
+  // QGraphicsRectItem* m_measureLinesItem;
 
   Marker* m_cursorMarker;
-  // QMap<int, StateLine> m_slotStateLines;
-  QMap<QString, StateLine*> m_stateLines;
+  QMap<QString, Marker*> m_stateMarkers;
 
   int m_scale;
   int m_width;
@@ -69,7 +67,7 @@ private:
   u64 m_previousFrame;
 };
 
-  
+
 class Marker : public QGraphicsItem
 {
 public:
@@ -81,9 +79,10 @@ public:
   void SetBaseHeight(int baseHeight);
   void SetLevelHeight(int levelHeight);
   void SetLevel(int level);
-  void SetScale(int scale);
-  void RecalculateHorizontal();
-  void RecalculateVertical();
+  void RecalculateTextBoxX();
+  void RecalculateTextBoxY();
+  void RecalculateLineX();
+  void RecalculateLineY();
 
   QRectF boundingRect() const override;
   void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
@@ -91,16 +90,13 @@ public:
   QPainterPath shape() const override;
 
 private:
-  MovieTimelineWidget* m_timeline;
-
-  // QGraphicsRectItem* m_lineUpperItem;
-  // QGraphicsRectItem* m_lineLowerItem;
+  int m_baseHeight;
+  int m_levelHeight;
+  int m_level;
   QGraphicsRectItem* m_lineItem;
   QGraphicsRectItem* m_rectItem;
   QGraphicsSimpleTextItem* m_textItem;
 
-  int m_baseHeight;
-  int m_levelHeight;
-  int m_level;
+  MovieTimelineWidget* m_timeline;
   QPointF m_previousPos;
 };
