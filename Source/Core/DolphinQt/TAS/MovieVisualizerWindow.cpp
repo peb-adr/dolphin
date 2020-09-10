@@ -6,6 +6,7 @@
 #include <iostream>
 // DEBUG END
 
+#include <QFileInfo>
 #include <QLabel>
 #include <QPlainTextEdit>
 #include <QRegExp>
@@ -90,15 +91,6 @@ void MovieVisualizerWindow::OnUpdateTitle(const QString& title)
 {
   // confirm state save request
   ConfirmStateSave(title);
-  
-  // filter black list
-  // filter white list
-  // log
-
-
-
-
-
 
   // if (title.startsWith(tr("Dolphin")) ||
   //     title.startsWith(tr("DTM")) ||
@@ -111,14 +103,6 @@ void MovieVisualizerWindow::OnUpdateTitle(const QString& title)
   {
     return;
   }
-
-  // if (title.startsWith(tr("Saved State to")))
-  // {
-  //   if (title.compare(m_stateSaveRequest.confirmingMessage) == 0)
-  //   {
-  //     AppendLogMessage(tr("yeh"));
-  //   }
-  // }
 
   AppendLogMessage(title);
 }
@@ -156,42 +140,45 @@ void MovieVisualizerWindow::Connect()
   connect(m_timer, &QTimer::timeout, this, &MovieVisualizerWindow::Update);
 }
 
-void MovieVisualizerWindow::RequestStateSave(bool isSlot, const QString& name, 
-    int slot, const QString& path)
+// void MovieVisualizerWindow::RequestStateSave(bool isSlot, const QString& name, 
+//     int slot, const QString& path)
+void MovieVisualizerWindow::RequestStateSave(StateInfo* request)
 {
   if (m_stateSaveRequests.size() == s_requestStateSaveBufferSize)
   {
-    m_stateSaveRequests.removeFirst();
+    delete m_stateSaveRequests.takeFirst();
   }
 
-  StateSaveRequest request;
-  request.frame = Movie::GetCurrentFrame();
-  request.isSlot = isSlot;
-  request.name = path;
-  request.slot = slot;
-  request.confirmingMessage = tr("Saved State to %1").arg(path);
+  // StateSaveRequest request;
+  // request.frame = Movie::GetCurrentFrame();
+  // request.isSlot = isSlot;
+  // request.name = path;
+  // request.slot = slot;
+  // request.confirmingMessage = tr("Saved State to %1").arg(path);
+
 
   m_stateSaveRequests.append(request);
 }
 
 void MovieVisualizerWindow::ConfirmStateSave(const QString& message)
 {
-  QList<StateSaveRequest>::iterator i;
+  QString confirmingMessage;
+  QList<StateInfo*>::iterator i;
   for (i = m_stateSaveRequests.begin(); i != m_stateSaveRequests.end(); ++i)
   {
-    if (message.compare(i->confirmingMessage) == 0)
+    confirmingMessage = tr("Saved State to %1").arg((*i)->path);
+    if (message.compare(confirmingMessage) == 0)
     {
-      if (i->isSlot)
+      m_timeline->AddState(*i);
+
+      // remove confirmed request as well as removing and deleting precedings
+      // assuming that all previously requested state saves failed
+      QList<StateInfo*>::iterator j;
+      for (j = m_stateSaveRequests.begin(); j != i; j = m_stateSaveRequests.erase(j))
       {
-        m_timeline->AddStateSlot(i->slot, i->frame);
+        delete (*j);
       }
-      else
-      {
-        m_timeline->AddState(i->name, i->frame);
-      }
-      // remove confirmed request as well as preceding assuming that all
-      // previously requested state saves failed
-      m_stateSaveRequests.erase(m_stateSaveRequests.begin(), i + 1);
+      m_stateSaveRequests.erase(i);
       break;
     }
   }
@@ -205,7 +192,16 @@ void MovieVisualizerWindow::StateLoad(const QString& path)
 void MovieVisualizerWindow::StateSave(const QString& path)
 {
   AppendLogMessage(tr("StateDebug"));
-  RequestStateSave(false, path, 42, path);
+  // RequestStateSave(false, path, 42, path);
+
+  StateInfo* request = new StateInfo();
+  request->slot = -1;
+  request->path = path;
+  request->label = QFileInfo(path).baseName();
+  request->frame = Movie::GetCurrentFrame();
+  request->timestamp = Movie::GetRecordingStartTime();
+
+  RequestStateSave(request);
 }
 
 void MovieVisualizerWindow::StateLoadSlotAt(int slot)
@@ -219,7 +215,16 @@ void MovieVisualizerWindow::StateSaveSlotAt(int slot)
   // unfortunately MakeStateFilename() from Core/State.cpp is not available here
   QString path = tr(fmt::format("{}{}.s{:02d}", File::GetUserPath(D_STATESAVES_IDX),
       SConfig::GetInstance().GetGameID(), slot).c_str());
-  RequestStateSave(true, tr("never give up"), slot, path);
+  // RequestStateSave(true, tr("never give up"), slot, path);
+
+  StateInfo* request = new StateInfo();
+  request->slot = slot;
+  request->path = path;
+  request->label = QString::number(slot);
+  request->frame = Movie::GetCurrentFrame();
+  request->timestamp = Movie::GetRecordingStartTime();
+
+  RequestStateSave(request);
 }
 
 void MovieVisualizerWindow::StateLoadLastSavedAt(int slot)
