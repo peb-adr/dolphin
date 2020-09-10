@@ -23,8 +23,6 @@
 #include "DolphinQt/Resources.h"
 #include "Core/Movie.h"
 
-// TODONE dynamic height (dragable slider in VisualizerWindow layout)
-// static const int s_height = 100;
 static const int s_horizontalPadding = 50;
 static const int s_markerPadding = 5;
 static const int s_markerHeight = 20;
@@ -57,11 +55,7 @@ MovieTimelineWidget::MovieTimelineWidget(QWidget* parent) : QGraphicsView(parent
   m_previousFrame = 0;
 
   // Customize GraphicsView
-  // setMinimumHeight(m_height + 2 * frameWidth());
-  // setMaximumHeight(m_height + 2 * frameWidth());
   setAlignment(Qt::AlignLeft | Qt::AlignTop);
-  // verticalScrollBar()->setEnabled(false);
-  // setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
   // Setup Scene
   m_scene = new QGraphicsScene();
@@ -76,101 +70,68 @@ MovieTimelineWidget::MovieTimelineWidget(QWidget* parent) : QGraphicsView(parent
   m_cursorMarker->SetColor(s_cursorColor);
   m_cursorMarker->SetBaseHeight(0);
   m_cursorMarker->SetLevelHeight(s_markerHeight);
+  m_cursorMarker->SetLevel(0);
   m_cursorMarker->setZValue(-1);
   m_scene->addItem(m_cursorMarker);
 }
 
 MovieTimelineWidget::~MovieTimelineWidget()
 {
-  QList<StateLine*>::iterator i;
-  for (i = m_stateLines.values().begin(); i != m_stateLines.values().end(); ++i)
-  {
-    delete (*i)->info;
-    delete (*i);
-  }
+  // QList<StateLine*>::iterator i;
+  // for (i = m_stateLines.values().begin(); i != m_stateLines.values().end(); ++i)
+  // {
+  //   delete (*i)->info;
+  //   delete (*i);
+  // }
 }
 
-void MovieTimelineWidget::AddState(StateInfo* info)
+void MovieTimelineWidget::AddState(const StateInfo& info)
 {
-  StateLine* line;
+  Marker* marker;
 
-  if (!m_stateLines.contains(info->path))
+  if (!m_stateMarkers.contains(info.path))
   {
-    Marker* marker = new Marker(this);
-    marker->SetText(info->label);
+    marker = new Marker(this);
+    marker->SetText(info.label);
     marker->SetLevelHeight(s_markerHeight);
 
-    if (info->slot < 0)
+    if (info.slot < 0)
     {
       marker->SetColor(s_stateColor);
-      marker->SetBaseHeight(m_height - s_markerHeight - s_markerPadding);
-      marker->setZValue(-4);
     }
     else
     {
       marker->SetColor(s_stateSlotColor);
-      marker->SetBaseHeight(s_markerHeight + s_markerPadding);
-      marker->setZValue(-3);
     }
+    marker->SetBaseHeight(s_markerHeight + s_markerPadding);
+    marker->setZValue(-3);
 
     m_scene->addItem(marker);
 
-    line = new StateLine();
-    line->marker = marker;
-    line->info = info;
-
-    m_stateLines.insert(info->path, line);
+    m_stateMarkers.insert(info.path, marker);
   }
-  else
-  {
-    line = m_stateLines.value(info->path);
-    // delete line.info;
-    // line.info = info
-    // update existing info and delete unused info
-    // memcpy(line.info, info, sizeof(StateInfo));
-    line->info->slot = info->slot;
-    line->info->path = info->path;
-    line->info->label = info->label;
-    line->info->frame = info->frame;
-    line->info->timestamp = info->timestamp;
-    delete info;
-  }
-  
-  line->marker->setX(line->info->frame * m_scale);
+  marker = m_stateMarkers.value(info.path);
+  marker->setData(FRAME, info.frame);
+  marker->setData(TIMESTAMP, quint64(info.timestamp));
+  marker->setX(info.frame * m_scale);
 
   bool collides = true;
   int l = 0;
 
   while(collides) {
-    line->marker->SetLevel(l);
-    // if (line->info->slot < 0)
-    // {
-    //   l--;
-    // }
-    // else
-    // {
-    //   l++;
-    // }
+    marker->SetLevel(l);
     l++;
 
     collides = false;
-    for (QList<StateLine*>::iterator i = m_stateLines.values().begin();
-        !collides && i != m_stateLines.values().end(); ++i)
+    QMap<QString, Marker*>::iterator i;
+    for (i = m_stateMarkers.begin(); !collides && i != m_stateMarkers.end(); ++i)
     {
-      // // if i not the same marker
-      // // if (line->marker != i->marker &&
-      // if (line->info->path.compare((*i)->info->path) != 0 &&
-      // // and of same kind (slot/non-slot)
-      //     ((line->info->slot < 0 && (*i)->info->slot < 0) ||
-      //     (line->info->slot >= 0 && (*i)->info->slot >= 0)))
-      if (line->info->path.compare((*i)->info->path) != 0)
+      if (i.key().compare(info.path) != 0)
       {
-        collides = line->marker->collidesWithItem((*i)->marker);
+        collides = marker->collidesWithItem(i.value());
       }
     }
   }
-
-
 }
 
 void MovieTimelineWidget::Update()
@@ -208,14 +169,15 @@ void MovieTimelineWidget::SetScale(int scale)
   qDeleteAll(m_measureLineItems);
   m_measureLineItems.clear();
 
-  m_cursorMarker->SetScale(scale);
+  // m_cursorMarker->SetScale(scale);
+  m_cursorMarker->RecalculateLineX();
 
   // scale state markers
-  QList<StateLine*>::iterator i;
-  for (i = m_stateLines.values().begin(); i != m_stateLines.values().end(); ++i)
+  QMap<QString, Marker*>::iterator i;
+  for (i = m_stateMarkers.begin(); i != m_stateMarkers.end(); ++i)
   {
-    (*i)->marker->setX((*i)->info->frame * scale);
-    (*i)->marker->SetScale(scale);
+    i.value()->setX(i.value()->data(FRAME).toInt() * scale);
+    i.value()->RecalculateLineX();
   }
 
   Update();
@@ -238,40 +200,16 @@ int MovieTimelineWidget::GetHeight()
 
 void MovieTimelineWidget::resizeEvent(QResizeEvent *event)
 {
-  // if (s_resizeInProgress)
-  // {
-  //   return;
-  // }
-  // s_resizeInProgress = true;
+  QGraphicsView::resizeEvent(event);
 
-  // m_height = height() - 2 * frameWidth();
-  // m_cursorMarker->RecalculateVertical();
+  m_height = height() - 2 * frameWidth();
+  m_cursorMarker->RecalculateLineY();
 
-  // QList<StateLine*>::iterator i;
-  // for (i = m_stateLines.values().begin(); i != m_stateLines.values().end(); ++i)
-  // {
-  //   // if ((*i)->info->slot < 0)
-  //   // {
-  //   //   (*i)->marker->SetBaseHeight(m_height - s_markerHeight - s_markerPadding);
-  //   // }
-  //   // else
-  //   // {
-  //   //   (*i)->marker->RecalculateVertical();
-  //   // }
-  //   (*i)->marker->RecalculateVertical();
-  // }
-
-  // for (QMap<int, StateLine>::iterator i = m_stateLines.begin(); i != m_stateLines.end(); ++i)
-  // {
-  //   i.value().marker->RecalculateVertical();
-  // }
-  // for (QMap<QString, StateLine>::iterator i = m_stateLines.begin(); i != m_stateLines.end(); ++i)
-  // {
-  //   i.value().marker->SetBaseHeight(m_height - s_markerHeight - s_markerPadding);
-  //   i.value().marker->RecalculateVertical();
-  // }
-
-  // s_resizeInProgress = false;
+  QMap<QString, Marker*>::iterator i;
+  for (i = m_stateMarkers.begin(); i != m_stateMarkers.end(); ++i)
+  {
+    i.value()->RecalculateLineY();
+  }
 }
 
 void MovieTimelineWidget::UpdateSceneRect()
@@ -362,26 +300,24 @@ Marker::Marker(MovieTimelineWidget *timeline = nullptr) : QGraphicsItem(nullptr)
   m_previousPos = QPointF(0, 0);
 
   m_timeline = timeline;
-  // m_lineUpperItem = new QGraphicsRectItem(this);
-  // m_lineLowerItem = new QGraphicsRectItem(this);
   m_lineItem = new QGraphicsRectItem(this);
   m_rectItem = new QGraphicsRectItem(this);
   m_textItem = new QGraphicsSimpleTextItem(this);
   m_textItem->setFont(QFont(QStringLiteral(""), s_markerHeight - 4, 3));
-  m_lineItem->setZValue(-3);  
-  m_rectItem->setZValue(-2);
-  m_textItem->setZValue(-1);
+  // m_lineItem->setZValue(-4);
+  // m_rectItem->setZValue(-3);
+  // m_textItem->setZValue(-3);
+  m_lineItem->setFlag(QGraphicsItem::ItemStacksBehindParent);
 
   SetColor(Qt::black);
-  SetScale(m_timeline->GetScale());
   SetLevel(0);
   SetText(QString());
+  RecalculateLineX();
+  RecalculateLineY();
 }
 
 Marker::~Marker()
 {
-  // delete m_lineUpperItem;
-  // delete m_lineLowerItem;
   delete m_lineItem;
   delete m_rectItem;
   delete m_textItem;
@@ -389,14 +325,9 @@ Marker::~Marker()
 
 void Marker::SetColor(const QColor& color)
 {
-//   m_lineUpperItem->setPen(QPen(color));
-//   m_lineUpperItem->setBrush(QBrush(color));
-//   m_lineLowerItem->setPen(QPen(color));
-//   m_lineLowerItem->setBrush(QBrush(color));
   m_lineItem->setPen(QPen(color));
   m_lineItem->setBrush(QBrush(color));
   m_rectItem->setPen(QPen(QBrush(color), 2));
-  // m_rectItem->setBrush(QBrush(QColor(QStringLiteral("transparent"))));
   m_rectItem->setBrush(s_backgroundBrush);
   m_textItem->setPen(QPen(color));
   m_textItem->setBrush(QBrush(color));
@@ -405,47 +336,27 @@ void Marker::SetColor(const QColor& color)
 void Marker::SetText(const QString& text)
 {
   m_textItem->setText(text);
-  RecalculateHorizontal();
+  RecalculateTextBoxX();
 }
 
 void Marker::SetBaseHeight(int baseHeight)
 {
   m_baseHeight = baseHeight;
-  RecalculateVertical();
 }
 
 void Marker::SetLevelHeight(int levelHeight)
 {
   m_levelHeight = levelHeight;
-  RecalculateVertical();
 }
 
 void Marker::SetLevel(int level)
 {
   m_level = level;
-  RecalculateVertical();
+  RecalculateTextBoxY();
 }
 
-void Marker::SetScale(int scale)
+void Marker::RecalculateTextBoxX()
 {
-  // adjust width of lines
-  QRectF r;
-  r = m_lineItem->rect();
-  r.setWidth(scale);
-  m_lineItem->setRect(r);
-  // // upper line
-  // r = m_lineUpperItem->rect();
-  // r.setWidth(scale);
-  // m_lineUpperItem->setRect(r);
-  // // lower line
-  // r = m_lineLowerItem->rect();
-  // r.setWidth(scale);
-  // m_lineLowerItem->setRect(r);
-}
-
-void Marker::RecalculateHorizontal()
-{
-  QRectF rect = m_rectItem->rect();
   int width = qFloor(m_textItem->boundingRect().width());
   // adjust xPos of text and rect
   // boxed text should be centered ...
@@ -456,6 +367,8 @@ void Marker::RecalculateHorizontal()
     xPos = -x();
   }
   m_textItem->setX(xPos + 3);
+
+  QRectF rect = m_rectItem->rect();
   rect.setX(xPos);
   // adjust rect width
   width += 6;
@@ -463,31 +376,33 @@ void Marker::RecalculateHorizontal()
   m_rectItem->setRect(rect);
 }
 
-void Marker::RecalculateVertical()
+void Marker::RecalculateTextBoxY()
 {
-  // adjust yPos and height of items
-  QRectF r;
-  r = m_lineItem->rect();
-  r.setY(0);
-  r.setHeight(m_timeline->GetHeight());
-  m_lineItem->setRect(r);
-  // upper line
-  // r = m_lineUpperItem->rect();
-  // r.setY(0);
-  // r.setHeight(m_baseHeight + m_level * m_levelHeight);
-  // m_lineUpperItem->setRect(r);
-  // // lower line
-  // r = m_lineLowerItem->rect();
-  // r.setY(m_baseHeight + (m_level + 1) * m_levelHeight);
-  // r.setHeight(m_timeline->GetHeight() - m_baseHeight - (m_level + 1) * m_levelHeight);
-  // m_lineLowerItem->setRect(r);
   // rect
-  r = m_rectItem->rect();
+  QRectF r = m_rectItem->rect();
   r.setY(m_baseHeight + m_level * m_levelHeight + 1);
   r.setHeight(m_levelHeight - 1);
   m_rectItem->setRect(r);
   // text
   m_textItem->setY(m_baseHeight + m_level * m_levelHeight - 1);
+}
+
+void Marker::RecalculateLineX()
+{
+  QRectF r;
+  r = m_lineItem->rect();
+  r.setX(0);
+  r.setWidth(m_timeline->GetScale());
+  m_lineItem->setRect(r);
+}
+
+void Marker::RecalculateLineY()
+{
+  QRectF r;
+  r = m_lineItem->rect();
+  r.setY(0);
+  r.setHeight(m_timeline->GetHeight());
+  m_lineItem->setRect(r);
 }
 
 QRectF Marker::boundingRect() const
@@ -501,7 +416,7 @@ void Marker::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 {
   if (pos() != m_previousPos)
   {
-    RecalculateHorizontal();
+    RecalculateTextBoxX();
   }
   m_previousPos = pos();
 }

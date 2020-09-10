@@ -6,12 +6,16 @@
 #include <iostream>
 // DEBUG END
 
+#include <QDialogButtonBox>
 #include <QFileInfo>
+#include <QFormLayout>
 #include <QLabel>
 #include <QPlainTextEdit>
+#include <QPushButton>
 #include <QRegExp>
 #include <QScrollBar>
 #include <QSpinBox>
+#include <QSplitter>
 #include <QTimer>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -24,28 +28,22 @@
 #include "Core/Movie.h"
 #include "Core/State.h"
 #include "DolphinQt/Host.h"
-#include "DolphinQt/TAS/MovieTimelineWidget.h"
+// #include "DolphinQt/TAS/MovieTimelineWidget.h"
 
 static const int s_requestStateSaveBufferSize =10;
 
 MovieVisualizerWindow::MovieVisualizerWindow(QWidget* parent) : QDialog(parent)
 {
   setWindowTitle(tr("Movie Visualizer"));
-  QString path = tr(File::GetUserPath(D_STATESAVES_IDX).c_str());
-  m_regexStateSlotPath = new QRegExp(QRegExp::escape(path) + tr("\\w{6}\\.s\\d\\d"));
-
-  m_updateIntervalChooser = new QSpinBox(this);
-  m_updateIntervalChooser->setRange(0, 10000);
-  m_updateIntervalChooser->setValue(10);
-  m_updateIntervalChooser->setToolTip(tr("Timeline update interval in ms"));
-
-  m_scaleChooser = new QSpinBox(this);
-  m_scaleChooser->setRange(1, 10);
-  m_scaleChooser->setValue(1);
-  m_scaleChooser->setToolTip(tr("Timeline horizontal scale in px/frame"));
+  // QString path = tr(File::GetUserPath(D_STATESAVES_IDX).c_str());
+  // m_regexStateSlotPath = new QRegExp(QRegExp::escape(path) + tr("\\w{6}\\.s\\d\\d"));
 
   m_rwModeIndicator = new QLabel(this);
   m_rwModeIndicator->setAlignment(Qt::AlignCenter);
+
+  m_settingsDialog = new SettingsDialog(this);
+  m_showSettingsButton = new QPushButton(this);
+  m_showSettingsButton->setText(tr("Settings"));
 
   m_timeline = new MovieTimelineWidget(this);
 
@@ -59,19 +57,25 @@ MovieVisualizerWindow::MovieVisualizerWindow(QWidget* parent) : QDialog(parent)
   // DEBUG
   m_log->setPlainText(tr("yer mom soo fet"));
 
+  // layout components
+
   QHBoxLayout* hLayout = new QHBoxLayout();
   hLayout->addWidget(m_rwModeIndicator);
-  hLayout->addWidget(m_scaleChooser);
-  hLayout->addWidget(m_updateIntervalChooser);
+  // hLayout->addWidget(m_scaleChooser);
+  // hLayout->addWidget(m_updateIntervalChooser);
+  hLayout->addWidget(m_showSettingsButton);
+
+  QSplitter* splitter = new QSplitter(Qt::Vertical);
+  splitter->addWidget(m_timeline);
+  splitter->addWidget(m_log);
 
   QVBoxLayout* vLayout = new QVBoxLayout();
   vLayout->addLayout(hLayout);
-  vLayout->addWidget(m_timeline);
-  vLayout->addWidget(m_log);
+  vLayout->addWidget(splitter);
   setLayout(vLayout);
 
   m_timer = new QTimer(this);
-  m_timer->start(m_updateIntervalChooser->value());
+  m_timer->start(10);
 
   Connect();
 }
@@ -133,52 +137,38 @@ void MovieVisualizerWindow::Connect()
 {  
   connect(Host::GetInstance(), &Host::RequestTitle,
       this, &MovieVisualizerWindow::OnUpdateTitle);
-  connect(m_updateIntervalChooser, QOverload<int>::of(&QSpinBox::valueChanged),
-      m_timer, QOverload<int>::of(&QTimer::start));
-  connect(m_scaleChooser, QOverload<int>::of(&QSpinBox::valueChanged),
-      m_timeline, QOverload<int>::of(&MovieTimelineWidget::SetScale));
   connect(m_timer, &QTimer::timeout, this, &MovieVisualizerWindow::Update);
+  connect(m_showSettingsButton, &QAbstractButton::clicked, m_settingsDialog, &QWidget::show);
+
+  connect(m_settingsDialog, QOverload<int>::of(&SettingsDialog::ScaleChanged),
+      m_timeline, QOverload<int>::of(&MovieTimelineWidget::SetScale));
+  connect(m_settingsDialog, QOverload<int>::of(&SettingsDialog::UpdateIntervalChanged),
+      m_timer, QOverload<int>::of(&QTimer::start));
 }
 
-// void MovieVisualizerWindow::RequestStateSave(bool isSlot, const QString& name, 
-//     int slot, const QString& path)
-void MovieVisualizerWindow::RequestStateSave(StateInfo* request)
+void MovieVisualizerWindow::RequestStateSave(StateInfo& request)
 {
   if (m_stateSaveRequests.size() == s_requestStateSaveBufferSize)
   {
-    delete m_stateSaveRequests.takeFirst();
+    m_stateSaveRequests.removeFirst();
   }
-
-  // StateSaveRequest request;
-  // request.frame = Movie::GetCurrentFrame();
-  // request.isSlot = isSlot;
-  // request.name = path;
-  // request.slot = slot;
-  // request.confirmingMessage = tr("Saved State to %1").arg(path);
-
-
   m_stateSaveRequests.append(request);
 }
 
 void MovieVisualizerWindow::ConfirmStateSave(const QString& message)
 {
   QString confirmingMessage;
-  QList<StateInfo*>::iterator i;
+  QList<StateInfo>::iterator i;
   for (i = m_stateSaveRequests.begin(); i != m_stateSaveRequests.end(); ++i)
   {
-    confirmingMessage = tr("Saved State to %1").arg((*i)->path);
+    confirmingMessage = tr("Saved State to %1").arg(i->path);
     if (message.compare(confirmingMessage) == 0)
     {
       m_timeline->AddState(*i);
 
       // remove confirmed request as well as removing and deleting precedings
       // assuming that all previously requested state saves failed
-      QList<StateInfo*>::iterator j;
-      for (j = m_stateSaveRequests.begin(); j != i; j = m_stateSaveRequests.erase(j))
-      {
-        delete (*j);
-      }
-      m_stateSaveRequests.erase(i);
+      m_stateSaveRequests.erase(m_stateSaveRequests.begin(), i + 1);
       break;
     }
   }
@@ -192,14 +182,13 @@ void MovieVisualizerWindow::StateLoad(const QString& path)
 void MovieVisualizerWindow::StateSave(const QString& path)
 {
   AppendLogMessage(tr("StateDebug"));
-  // RequestStateSave(false, path, 42, path);
 
-  StateInfo* request = new StateInfo();
-  request->slot = -1;
-  request->path = path;
-  request->label = QFileInfo(path).baseName();
-  request->frame = Movie::GetCurrentFrame();
-  request->timestamp = Movie::GetRecordingStartTime();
+  StateInfo request;
+  request.slot = -1;
+  request.path = path;
+  request.label = QFileInfo(path).baseName();
+  request.frame = Movie::GetCurrentFrame();
+  request.timestamp = Movie::GetRecordingStartTime();
 
   RequestStateSave(request);
 }
@@ -215,14 +204,13 @@ void MovieVisualizerWindow::StateSaveSlotAt(int slot)
   // unfortunately MakeStateFilename() from Core/State.cpp is not available here
   QString path = tr(fmt::format("{}{}.s{:02d}", File::GetUserPath(D_STATESAVES_IDX),
       SConfig::GetInstance().GetGameID(), slot).c_str());
-  // RequestStateSave(true, tr("never give up"), slot, path);
 
-  StateInfo* request = new StateInfo();
-  request->slot = slot;
-  request->path = path;
-  request->label = QString::number(slot);
-  request->frame = Movie::GetCurrentFrame();
-  request->timestamp = Movie::GetRecordingStartTime();
+  StateInfo request;
+  request.slot = slot;
+  request.path = path;
+  request.label = QString::number(slot);
+  request.frame = Movie::GetCurrentFrame();
+  request.timestamp = Movie::GetRecordingStartTime();
 
   RequestStateSave(request);
 }
@@ -245,4 +233,73 @@ void MovieVisualizerWindow::StateSaveUndo()
 void MovieVisualizerWindow::StateSaveOldest()
 {
   AppendLogMessage(tr("StateDebug"));
+}
+
+
+////////////////////////////////
+////////////////////////////////
+///// class SettingsDialog /////
+////////////////////////////////
+////////////////////////////////
+
+SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent)
+{
+  m_scale = 1;
+  m_updateInterval = 10;
+
+  setWindowTitle(tr("Movie Visualizer Settings"));
+
+  m_scaleChooser = new QSpinBox(this);
+  m_scaleChooser->setRange(1, 10);
+  m_scaleChooser->setValue(1);
+  m_scaleChooser->setToolTip(tr("Timeline horizontal scale in px/frame"));
+
+  m_updateIntervalChooser = new QSpinBox(this);
+  m_updateIntervalChooser->setRange(0, 10000);
+  m_updateIntervalChooser->setValue(10);
+  m_updateIntervalChooser->setToolTip(tr("Timeline update interval in ms"));
+
+  m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+
+  QFormLayout* fLayout = new QFormLayout();
+  fLayout->addRow(tr("update interval (ms)"), m_updateIntervalChooser);
+  fLayout->addRow(tr("scale (px/frame)"), m_scaleChooser);
+
+  QVBoxLayout* vLayout = new QVBoxLayout();
+  vLayout->addLayout(fLayout);
+  vLayout->addWidget(m_buttons);
+  setLayout(vLayout);
+
+  connect(m_buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+  connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+  connect(this, &QDialog::accepted, this, &SettingsDialog::OnAccepted);
+  connect(this, &QDialog::rejected, this, &SettingsDialog::OnRejected);
+}
+
+SettingsDialog::~SettingsDialog()
+{
+
+}
+
+void SettingsDialog::OnAccepted()
+{
+  int newScale = m_scaleChooser->value();
+  if (newScale != m_scale)
+  {
+    m_scale = newScale;
+    emit ScaleChanged(newScale);
+  }
+
+  int newUpdateInterval = m_updateIntervalChooser->value();
+  if (newUpdateInterval != m_updateInterval)
+  {
+    m_updateInterval = newUpdateInterval;
+    emit UpdateIntervalChanged(newUpdateInterval);
+  }
+}
+
+void SettingsDialog::OnRejected()
+{
+  m_scaleChooser->setValue(m_scale);
+  m_updateIntervalChooser->setValue(m_updateInterval);
 }
