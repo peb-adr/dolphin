@@ -16,13 +16,6 @@ class QGraphicsRectItem;
 class QGraphicsSimpleTextItem;
 class QRectF;
 
-struct StateLine
-{
-  QString label;
-  int frame;
-  Marker* marker;
-};
-
 struct StateInfo
 {
   // -1 for non slot state
@@ -33,15 +26,22 @@ struct StateInfo
   u64 timestamp;
 };
 
+struct StateLine
+{
+  StateInfo* info;
+  Marker* marker;
+};
+
 
 class MovieTimelineWidget : public QGraphicsView
 {
 public:
   MovieTimelineWidget(QWidget* parent);
+  ~MovieTimelineWidget();
 
-  // void AddStateLine(StateLine state);
-  void AddState(const QString& path, int frame);
-  void AddStateSlot(int slot, int frame);
+  void AddState(StateInfo* info);
+  // void AddState(const QString& path, int frame);
+  // void AddStateSlot(int slot, int frame);
   void Update();
   void SetScale(int scale);
   int GetScale();
@@ -60,8 +60,8 @@ private:
   QList<QGraphicsRectItem*> m_measureLineItems;
 
   Marker* m_cursorMarker;
-  QMap<int, StateLine> m_slotStateLines;
-  QMap<QString, StateLine> m_stateLines;
+  // QMap<int, StateLine> m_slotStateLines;
+  QMap<QString, StateLine*> m_stateLines;
 
   int m_scale;
   int m_width;
@@ -93,8 +93,9 @@ public:
 private:
   MovieTimelineWidget* m_timeline;
 
-  QGraphicsRectItem* m_lineUpperItem;
-  QGraphicsRectItem* m_lineLowerItem;
+  // QGraphicsRectItem* m_lineUpperItem;
+  // QGraphicsRectItem* m_lineLowerItem;
+  QGraphicsRectItem* m_lineItem;
   QGraphicsRectItem* m_rectItem;
   QGraphicsSimpleTextItem* m_textItem;
 
