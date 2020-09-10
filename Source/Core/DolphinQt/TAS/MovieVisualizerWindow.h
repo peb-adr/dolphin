@@ -15,6 +15,7 @@ class QTimer;
 class QWidget;
 
 class MovieTimelineWidget;
+struct StateInfo;
 
 // So the whole request thing is done to accurately capture the frame the state
 // save happened.
@@ -52,7 +53,8 @@ private:
   void UpdateRwModeIndicator();
   void AppendLogMessage(const QString& message);
   void Connect();
-  void RequestStateSave(bool isSlot, const QString& name, int slot, const QString& path);
+  // void RequestStateSave(bool isSlot, const QString& name, int slot, const QString& path);
+  void RequestStateSave(StateInfo* request);
   void ConfirmStateSave(const QString& message);
 
   QTimer* m_timer;
@@ -62,7 +64,7 @@ private:
   MovieTimelineWidget* m_timeline;
   QPlainTextEdit* m_log;
 
-  QList<StateSaveRequest> m_stateSaveRequests;
+  QList<StateInfo*> m_stateSaveRequests;
 
   // TODO
   // QStringList logBlackList
