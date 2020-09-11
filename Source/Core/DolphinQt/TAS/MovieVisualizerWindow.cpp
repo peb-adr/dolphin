@@ -30,18 +30,24 @@
 #include "DolphinQt/Host.h"
 // #include "DolphinQt/TAS/MovieTimelineWidget.h"
 
-static const int s_requestStateSaveBufferSize =10;
+static const int s_requestStateSaveBufferSize = 10;
+static QString s_messageStateSavedPrefix(QStringLiteral("Saved State to "));
+static QString s_messageStateLoadedPrefix(QStringLiteral("Loaded state from "));
+static QRegExp s_regexStateSlotSaved;
+static QRegExp s_regexStateSlotLoaded;
 
 MovieVisualizerWindow::MovieVisualizerWindow(QWidget* parent) : QDialog(parent)
 {
+  QString s = tr(File::GetUserPath(D_STATESAVES_IDX).c_str());
+  s = QRegExp::escape(s) + tr("\\w{6}\\.s\\d\\d");
+  s_regexStateSlotSaved = QRegExp(s_messageStateSavedPrefix + s);
+  s_regexStateSlotLoaded = QRegExp(s_messageStateLoadedPrefix + s);
+
   setWindowTitle(tr("Movie Visualizer"));
-  // QString path = tr(File::GetUserPath(D_STATESAVES_IDX).c_str());
-  // m_regexStateSlotPath = new QRegExp(QRegExp::escape(path) + tr("\\w{6}\\.s\\d\\d"));
 
   m_rwModeIndicator = new QLabel(this);
   m_rwModeIndicator->setAlignment(Qt::AlignCenter);
 
-  m_settingsDialog = new SettingsDialog(this);
   m_showSettingsButton = new QPushButton(this);
   m_showSettingsButton->setText(tr("Settings"));
 
@@ -54,15 +60,12 @@ MovieVisualizerWindow::MovieVisualizerWindow(QWidget* parent) : QDialog(parent)
   palette.setColor(QPalette::Base, Qt::black);
   palette.setColor(QPalette::Text, Qt::yellow);
   m_log->setPalette(palette);
-  // DEBUG
-  m_log->setPlainText(tr("yer mom soo fet"));
+
+  m_settingsDialog = new SettingsDialog(this);
 
   // layout components
-
   QHBoxLayout* hLayout = new QHBoxLayout();
   hLayout->addWidget(m_rwModeIndicator);
-  // hLayout->addWidget(m_scaleChooser);
-  // hLayout->addWidget(m_updateIntervalChooser);
   hLayout->addWidget(m_showSettingsButton);
 
   QSplitter* splitter = new QSplitter(Qt::Vertical);
@@ -77,6 +80,7 @@ MovieVisualizerWindow::MovieVisualizerWindow(QWidget* parent) : QDialog(parent)
   m_timer = new QTimer(this);
   m_timer->start(10);
 
+  InitializeBlackWhiteLists();
   Connect();
 }
 
@@ -91,19 +95,51 @@ void MovieVisualizerWindow::Update()
   // DEBUG END
 }
 
-void MovieVisualizerWindow::OnUpdateTitle(const QString& title)
+void MovieVisualizerWindow::OnHostUpdateTitle(const QString& title)
 {
   // confirm state save request
   ConfirmStateSave(title);
 
-  // if (title.startsWith(tr("Dolphin")) ||
-  //     title.startsWith(tr("DTM")) ||
-  //     title.startsWith(tr("Decompressing")) ||
-  //     title.startsWith(tr("Saving")))
-  // {
-  //     return;
-  // }
-  if (title.startsWith(tr("Dolphin")))
+  // state save and load messages get nicer formatting
+  if (s_regexStateSlotSaved.exactMatch(title))
+  {
+    AppendLogMessage(tr("Save State [ %1 ]").arg(title.right(2)));
+    return;
+  }
+  else if (title.startsWith(s_messageStateSavedPrefix))
+  {
+    AppendLogMessage(tr("Save State %1").arg(
+        title.mid(s_messageStateSavedPrefix.length())));
+    return;
+  }
+  if (s_regexStateSlotLoaded.exactMatch(title))
+  {
+    AppendLogMessage(tr("Load State [ %1 ]").arg(title.right(2)));
+    return;
+  }
+  else if (title.startsWith(s_messageStateLoadedPrefix))
+  {
+    AppendLogMessage(tr("Load State %1").arg(
+        title.mid(s_messageStateLoadedPrefix.length())));
+    return;
+  }
+
+  // filter by black and white list
+  bool accept = true;
+
+  QList<QRegExp>::iterator i;
+  // QStringList::iterator i;
+  for (i = m_logBlackList.begin(); accept && i != m_logBlackList.end(); ++i)
+  {
+    accept = !(i->exactMatch(title));
+    // accept = !title.contains(*i);
+  }
+  for (i = m_logWhiteList.begin(); !accept && i != m_logWhiteList.end(); ++i)
+  {
+    accept = i->exactMatch(title);
+    // accept = title.contains(*i);
+  }
+  if (!accept)
   {
     return;
   }
@@ -127,16 +163,28 @@ void MovieVisualizerWindow::UpdateRwModeIndicator()
 
 void MovieVisualizerWindow::AppendLogMessage(const QString& message)
 {
-  // m_log->appendPlainText(message);
-  m_log->appendPlainText(QString::number(Movie::GetCurrentFrame()) + message);
+  m_log->appendPlainText(message);
   m_log->verticalScrollBar()->setValue(m_log->verticalScrollBar()->maximum());
 }
 
+void MovieVisualizerWindow::InitializeBlackWhiteLists()
+{
+  // black list
+  m_logBlackList.append(QRegExp(tr("Dolphin.*")));
+  m_logBlackList.append(QRegExp(tr("DTM.*")));
+  m_logBlackList.append(QRegExp(tr("Decompressing.*")));
+  m_logBlackList.append(QRegExp(tr("Saving. *")));
+  // m_logBlackList.append(tr("Dolphin "));
+  // m_logBlackList.append(tr("DTM"));
+  // m_logBlackList.append(tr("Decompressing"));
+  // m_logBlackList.append(tr("Saving"));
+  // white list
+}
 
 void MovieVisualizerWindow::Connect()
 {  
   connect(Host::GetInstance(), &Host::RequestTitle,
-      this, &MovieVisualizerWindow::OnUpdateTitle);
+      this, &MovieVisualizerWindow::OnHostUpdateTitle);
   connect(m_timer, &QTimer::timeout, this, &MovieVisualizerWindow::Update);
   connect(m_showSettingsButton, &QAbstractButton::clicked, m_settingsDialog, &QWidget::show);
 
@@ -161,7 +209,7 @@ void MovieVisualizerWindow::ConfirmStateSave(const QString& message)
   QList<StateInfo>::iterator i;
   for (i = m_stateSaveRequests.begin(); i != m_stateSaveRequests.end(); ++i)
   {
-    confirmingMessage = tr("Saved State to %1").arg(i->path);
+    confirmingMessage = s_messageStateSavedPrefix + i->path;
     if (message.compare(confirmingMessage) == 0)
     {
       m_timeline->AddState(*i);
@@ -174,15 +222,8 @@ void MovieVisualizerWindow::ConfirmStateSave(const QString& message)
   }
 }
 
-void MovieVisualizerWindow::StateLoad(const QString& path)
-{
-  AppendLogMessage(tr("StateDebug"));
-}
-
 void MovieVisualizerWindow::StateSave(const QString& path)
 {
-  AppendLogMessage(tr("StateDebug"));
-
   StateInfo request;
   request.slot = -1;
   request.path = path;
@@ -193,14 +234,8 @@ void MovieVisualizerWindow::StateSave(const QString& path)
   RequestStateSave(request);
 }
 
-void MovieVisualizerWindow::StateLoadSlotAt(int slot)
-{
-  AppendLogMessage(tr("StateDebug"));
-}
-
 void MovieVisualizerWindow::StateSaveSlotAt(int slot)
 {
-  AppendLogMessage(tr("StateDebug"));
   // unfortunately MakeStateFilename() from Core/State.cpp is not available here
   QString path = tr(fmt::format("{}{}.s{:02d}", File::GetUserPath(D_STATESAVES_IDX),
       SConfig::GetInstance().GetGameID(), slot).c_str());
@@ -213,26 +248,6 @@ void MovieVisualizerWindow::StateSaveSlotAt(int slot)
   request.timestamp = Movie::GetRecordingStartTime();
 
   RequestStateSave(request);
-}
-
-void MovieVisualizerWindow::StateLoadLastSavedAt(int slot)
-{
-  AppendLogMessage(tr("StateDebug"));
-}
-
-void MovieVisualizerWindow::StateLoadUndo()
-{
-  AppendLogMessage(tr("StateDebug"));
-}
-
-void MovieVisualizerWindow::StateSaveUndo()
-{
-  AppendLogMessage(tr("StateDebug"));
-}
-
-void MovieVisualizerWindow::StateSaveOldest()
-{
-  AppendLogMessage(tr("StateDebug"));
 }
 
 

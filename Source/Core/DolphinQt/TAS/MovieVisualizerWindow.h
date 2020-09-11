@@ -15,6 +15,7 @@ class QPushButton;
 class QRegExp;
 class SettingsDialog;
 class QSpinBox;
+class QStringList;
 class QTimer;
 class QWidget;
 
@@ -30,20 +31,14 @@ public:
   void Update();
   // LogWidget* GetLogWidget();
 
-  void OnUpdateTitle(const QString& title);
-  void StateLoad(const QString& path);
+  void OnHostUpdateTitle(const QString& title);
   void StateSave(const QString& path);
-  void StateLoadSlotAt(int slot);
   void StateSaveSlotAt(int slot);
-  void StateLoadLastSavedAt(int slot);
-  void StateLoadUndo();
-  void StateSaveUndo();
-  void StateSaveOldest();
-  // void SetStateSlot(int slot);
 
 private:
   void UpdateRwModeIndicator();
   void AppendLogMessage(const QString& message);
+  void InitializeBlackWhiteLists();
   void Connect();
   // So the whole request thing is done to accurately capture the frame the state
   // save happened.
@@ -52,23 +47,18 @@ private:
   void RequestStateSave(StateInfo& request);
   void ConfirmStateSave(const QString& message);
 
+  QList<StateInfo> m_stateSaveRequests;
+  QList<QRegExp> m_logBlackList;
+  QList<QRegExp> m_logWhiteList;
+  // QStringList m_logBlackList;
+  // QStringList m_logWhiteList;
+
   QLabel* m_rwModeIndicator;
   QPushButton* m_showSettingsButton;
   MovieTimelineWidget* m_timeline;
   QPlainTextEdit* m_log;
-
-  QList<StateInfo> m_stateSaveRequests;
-
-  // TODO
-  // QStringList logBlackList
-  // QStringList logWhiteList
-  // QRegExp* m_regexStateSlotPath;
-
   SettingsDialog* m_settingsDialog;
-  
   QTimer* m_timer;
-  // QSpinBox* m_updateIntervalChooser;
-  // QSpinBox* m_scaleChooser;
 };
 
 class SettingsDialog : public QDialog
