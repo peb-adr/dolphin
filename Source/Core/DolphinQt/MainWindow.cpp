@@ -1208,8 +1208,6 @@ void MainWindow::StateLoad()
   QString path = QFileDialog::getOpenFileName(this, tr("Select a File"), QDir::currentPath(),
                                               tr("All Save States (*.sav *.s##);; All Files (*)"));
   State::LoadAs(path.toStdString());
-
-  m_movie_visualizer_window->StateLoad(path);
 }
 
 void MainWindow::StateSave()
@@ -1217,64 +1215,49 @@ void MainWindow::StateSave()
   QString path = QFileDialog::getSaveFileName(this, tr("Select a File"), QDir::currentPath(),
                                               tr("All Save States (*.sav *.s##);; All Files (*)"));
   State::SaveAs(path.toStdString());
-
   m_movie_visualizer_window->StateSave(path);
 }
 
 void MainWindow::StateLoadSlot()
 {
   State::Load(m_state_slot);
-
-  m_movie_visualizer_window->StateLoadSlotAt(m_state_slot);
 }
 
 void MainWindow::StateSaveSlot()
 {
   State::Save(m_state_slot);
-
   m_movie_visualizer_window->StateSaveSlotAt(m_state_slot);
 }
 
 void MainWindow::StateLoadSlotAt(int slot)
 {
   State::Load(slot);
-
-  m_movie_visualizer_window->StateLoadSlotAt(slot);
 }
 
 void MainWindow::StateLoadLastSavedAt(int slot)
 {
   State::LoadLastSaved(slot);
-
-  m_movie_visualizer_window->StateLoadLastSavedAt(slot);
 }
 
 void MainWindow::StateSaveSlotAt(int slot)
 {
   State::Save(slot);
-
   m_movie_visualizer_window->StateSaveSlotAt(slot);
 }
 
 void MainWindow::StateLoadUndo()
 {
   State::UndoLoadState();
-
-  m_movie_visualizer_window->StateLoadUndo();
 }
 
 void MainWindow::StateSaveUndo()
 {
   State::UndoSaveState();
-
-  m_movie_visualizer_window->StateSaveUndo();
 }
 
 void MainWindow::StateSaveOldest()
 {
   State::SaveFirstSaved();
-
-  m_movie_visualizer_window->StateSaveOldest();
 }
 
 void MainWindow::SetStateSlot(int slot)
