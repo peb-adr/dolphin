@@ -21,7 +21,7 @@
     <ClCompile>
       <!-- 5054  operator '+': deprecated between enumerations of different types (in Qt headers) -->
       <DisableSpecificWarnings>5054;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>$(ProjectDir)Config\Graphics;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>($ProjectDir)Config\Graphics;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ProjectDir)Config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ProjectDir)Config\ControllerInterface;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(ProjectDir)Config\Mapping;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -171,6 +171,8 @@
     <ClCompile Include="Settings\WiiPane.cpp" />
     <ClCompile Include="TAS\GCTASInputWindow.cpp" />
     <ClCompile Include="TAS\IRWidget.cpp" />
+    <ClCompile Include="TAS\MovieTimelineWidget.cpp" />
+    <ClCompile Include="TAS\MovieVisualizerWindow.cpp" />
     <ClCompile Include="TAS\StickWidget.cpp" />
     <ClCompile Include="TAS\TASCheckBox.cpp" />
     <ClCompile Include="TAS\TASInputWindow.cpp" />
@@ -195,6 +197,8 @@
     <ClInclude Include="QtUtils\WinIconHelper.h" />
     <ClInclude Include="ResourcePackManager.h" />
     <ClInclude Include="Resources.h" />
+    <ClInclude Include="TAS\MovieTimelineWidget.h" />
+    <QtMoc Include="TAS\MovieVisualizerWindow.h" />
     <ClInclude Include="Translation.h" />
     <ClInclude Include="WiiUpdate.h" />
     <QtMoc Include="AboutDialog.h" />
