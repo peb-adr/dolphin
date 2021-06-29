@@ -376,7 +376,8 @@ std::string Read_String(const u32 _Address, int count)
         std::string result;
 
         u8 _var = 0;
-        ReadFromHardware<u8>(_var, address , FLAG_READ);
+		u8 unused_effaddr = 0;
+        ReadFromHardware<u8>(_var, address, unused_effaddr, FLAG_READ);
 #ifdef ENABLE_MEM_CHECK
         TMemCheck *mc = PowerPC::memchecks.GetMemCheck(address );
         if (mc)
@@ -412,7 +413,8 @@ void Write_String(const std::string text, const u32 startAddress)
             mc->Action(&PowerPC::debug_interface, var, address, true, 1, PC);
         }
 #endif
-        WriteToHardware<u8>(address, var, FLAG_WRITE);
+		u8 unused_effaddr = 0;
+		WriteToHardware<u8>(address, var, unused_effaddr, FLAG_WRITE);
     }
 }
 // === ===
