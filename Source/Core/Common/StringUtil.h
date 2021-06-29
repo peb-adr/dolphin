@@ -13,6 +13,8 @@
 
 #include "Common/Common.h"
 
+std::string StringFromFormatV(const char* format, va_list args);
+
 std::string StringFromFormat(const char* format, ...)
 #if !defined _WIN32
 // On compilers that support function attributes, this gives StringFromFormat
@@ -64,6 +66,8 @@ template <typename N>
 static bool TryParse(const std::string &str, N *const output)
 {
 	std::istringstream iss(str);
+	// is this right? not doing this breaks reading floats on locales that use different decimal separators
+	iss.imbue(std::locale("C"));
 
 	N tmp = 0;
 	if (iss >> tmp)
@@ -101,6 +105,7 @@ void SplitString(const std::string& str, char delim, std::vector<std::string>& o
 
 // "C:/Windows/winhelp.exe" to "C:/Windows/", "winhelp", ".exe"
 bool SplitPath(const std::string& full_path, std::string* _pPath, std::string* _pFilename, std::string* _pExtension);
+bool SplitPathEscapeChar(const std::string& full_path, std::string* _pPath, std::string* _pFilename, std::string* _pExtension); //Dragonbane's function
 
 void BuildCompleteFilename(std::string& _CompleteFilename, const std::string& _Path, const std::string& _Filename);
 std::string ReplaceAll(std::string result, const std::string& src, const std::string& dest);

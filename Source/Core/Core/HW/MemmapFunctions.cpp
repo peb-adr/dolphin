@@ -365,6 +365,44 @@ u32 Read_Opcode(u32 _Address)
 	return PowerPC::ppcState.iCache.ReadInstruction(_Address);
 }
 
+// === NEW FUNCTIONS ===
+// TODO: not working
+std::string Read_String(const u32 startAddress, int count)
+{
+	std::string output = "";
+
+	for (int i = 0; i < count; i++)
+	{
+		u32 address = startAddress + i;
+		std::string result;
+
+		u8 var = ReadFromHardware<FLAG_READ, u8>(address);
+		Memcheck(address, var, false, 1);
+
+		result = var;
+
+		output.append(result);
+	}
+	return output;
+}
+
+void Write_String(const std::string text, const u32 startAddress)
+{
+	size_t count = text.length();
+
+	for (int i = 0; i < count; i++)
+	{
+		u32 address = startAddress + i;
+		const char letter = text.at(i);
+
+		u8 var = letter;
+
+		Memcheck(address, var, true, 1);
+		WriteToHardware<FLAG_WRITE, u8>(address, var);
+	}
+}
+// === ===
+
 u8 Read_U8(const u32 _Address)
 {
 	u8 _var = 0;
@@ -526,6 +564,19 @@ void Write_U64_Swap(const u64 _Data, const u32 _Address)
 {
 	Write_U64(Common::swap64(_Data), _Address);
 }
+
+// === NEW FUNCTION ===
+void Write_F32(const float var, const u32 address)
+{
+	union
+	{
+		u32 i;
+		float d;
+	} cvt;
+	cvt.d = var;
+	Write_U32(cvt.i, address);
+}
+// === ===
 
 void Write_F64(const double _Data, const u32 _Address)
 {

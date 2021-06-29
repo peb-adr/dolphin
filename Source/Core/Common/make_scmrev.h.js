@@ -60,12 +60,14 @@ function GetFileContents(f)
 	}
 }
 
+// === START OF EDITTED PART ===
 // get info from git
 var gitexe = GetGitExe();
 var revision	= GetFirstStdOutLine(gitexe + cmd_revision);
-var describe	= GetFirstStdOutLine(gitexe + cmd_describe);
-var branch		= GetFirstStdOutLine(gitexe + cmd_branch);
-var isMaster	= +("master" == branch);
+var describe	= "4.0-4222 [Lua Core]";
+var branch		= "";
+var isMaster	= 1;
+// === END ===
 
 // remove hash (and trailing "-0" if needed) from description
 describe = describe.replace(/(-0)?-[^-]+(-dirty)?$/, '$2');

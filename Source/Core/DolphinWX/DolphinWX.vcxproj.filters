@@ -25,6 +25,9 @@
     <Filter Include="Resources">
       <UniqueIdentifier>{d6bc4dd6-06ed-46ad-b327-04afb26e10ec}</UniqueIdentifier>
     </Filter>
+	<Filter Include="GUI\LuaCore">
+      <UniqueIdentifier>{e83c2185-9d54-4972-9796-dfe21fde49dc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GLInterface\GLInterface.cpp" />
@@ -168,6 +171,9 @@
     <ClCompile Include="SoftwareVideoConfigDialog.cpp">
       <Filter>GUI\Video</Filter>
     </ClCompile>
+	<ClCompile Include="LaunchLuaScript.cpp">
+      <Filter>GUI\LuaCore</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GLInterface\WGL.h" />
@@ -302,6 +308,9 @@
     </ClInclude>
     <ClInclude Include="SoftwareVideoConfigDialog.h">
       <Filter>GUI\Video</Filter>
+    </ClInclude>
+	<ClInclude Include="LaunchLuaScript.h">
+      <Filter>GUI\LuaCore</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -27,6 +27,8 @@
 #include "DolphinWX/Globals.h"
 #include "InputCommon/GCPadStatus.h"
 
+#include "DolphinWX/LaunchLuaScript.h"
+
 #if defined(HAVE_X11) && HAVE_X11
 #include "DolphinWX/X11Utils.h"
 #endif
@@ -100,6 +102,8 @@ public:
 	NetPlaySetupDiag* g_NetPlaySetupDiag;
 	wxCheatsWindow* g_CheatsWindow;
 	TASInputDlg* g_TASInputDlg[8];
+	
+	LuaWindow* g_ScriptLauncher; // ADDED
 
 	void InitBitmaps();
 	void DoPause();
@@ -320,6 +324,8 @@ private:
 	void OnMemcard(wxCommandEvent& event); // Misc
 	void OnImportSave(wxCommandEvent& event);
 	void OnExportAllSaves(wxCommandEvent& event);
+	
+	void OnScriptLaunch(wxCommandEvent& event); // ADDED
 
 	void OnNetPlay(wxCommandEvent& event);
 

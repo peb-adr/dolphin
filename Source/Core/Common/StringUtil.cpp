@@ -92,32 +92,36 @@ bool CharArrayFromFormatV(char* out, int outsize, const char* format, va_list ar
 	}
 }
 
+// === FUNCTION CHANGE FROM NEWER REVISION ===
 std::string StringFromFormat(const char* format, ...)
 {
 	va_list args;
+	va_start(args, format);
+	std::string res = StringFromFormatV(format, args);
+	va_end(args);
+	return std::move(res);
+}
+
+std::string StringFromFormatV(const char* format, va_list args)
+{
 	char *buf = nullptr;
 #ifdef _WIN32
-	int required = 0;
-
-	va_start(args, format);
-	required = _vscprintf(format, args);
+	int required = _vscprintf(format, args);
 	buf = new char[required + 1];
 	CharArrayFromFormatV(buf, required + 1, format, args);
-	va_end(args);
 
 	std::string temp = buf;
 	delete[] buf;
 #else
-	va_start(args, format);
 	if (vasprintf(&buf, format, args) < 0)
 		ERROR_LOG(COMMON, "Unable to allocate memory for string");
-	va_end(args);
 
 	std::string temp = buf;
 	free(buf);
 #endif
-	return temp;
+	return std::move(temp);
 }
+// === END OF FUNCTION CHANGE ===
 
 // For Debugging. Read out an u8 array.
 std::string ArrayToString(const u8 *data, u32 size, int line_len, bool spaces)
@@ -243,6 +247,40 @@ bool SplitPath(const std::string& full_path, std::string* _pPath, std::string* _
 
 	return true;
 }
+
+// === FUNCTION BY DRAGONBANE ===
+bool SplitPathEscapeChar(const std::string& full_path, std::string* _pPath, std::string* _pFilename, std::string* _pExtension)
+{
+	if (full_path.empty())
+		return false;
+
+	size_t dir_end = full_path.find_last_of("\\"
+		// Windows needs the : included for something like just "C:" to be considered a directory
+#ifdef _WIN32
+		":"
+#endif
+		);
+	if (std::string::npos == dir_end)
+		dir_end = 0;
+	else
+		dir_end += 1;
+
+	size_t fname_end = full_path.rfind('.');
+	if (fname_end < dir_end || std::string::npos == fname_end)
+		fname_end = full_path.size();
+
+	if (_pPath)
+		*_pPath = full_path.substr(0, dir_end);
+
+	if (_pFilename)
+		*_pFilename = full_path.substr(dir_end, fname_end - dir_end);
+
+	if (_pExtension)
+		*_pExtension = full_path.substr(fname_end);
+
+	return true;
+}
+// === ===
 
 void BuildCompleteFilename(std::string& _CompleteFilename, const std::string& _Path, const std::string& _Filename)
 {

@@ -94,6 +94,9 @@ u32 Read_Instruction(const u32 _Address);
 
 // For use by emulator
 
+std::string Read_String(const u32 startAddress, int count); // NEW FUNCTION
+void Write_String(const std::string text, const u32 startAddress); // NEW FUNCTION
+
 u8  Read_U8(const u32 _Address);
 u16 Read_U16(const u32 _Address);
 u32 Read_U32(const u32 _Address);
@@ -117,6 +120,7 @@ void Write_U32_Swap(const u32 _Data, const u32 _Address);
 void Write_U64_Swap(const u64 _Data, const u32 _Address);
 
 // Useful helper functions, used by ARM JIT
+void Write_F32(const float var, const u32 address); // NEW FUNCTION
 void Write_F64(const double _Data, const u32 _Address);
 
 std::string GetString(u32 em_address, size_t size = 0);

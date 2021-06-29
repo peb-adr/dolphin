@@ -5,6 +5,7 @@
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
 #include "Core/Movie.h"
+#include "Core/LUA/Lua.h"
 #include "Core/HW/EXI_Device.h"
 #include "Core/HW/EXI_DeviceMic.h"
 #include "Core/HW/GCPad.h"
@@ -110,6 +111,14 @@ bool CSIDevice_GCController::GetData(u32& _Hi, u32& _Low)
 	memset(&PadStatus, 0, sizeof(PadStatus));
 
 	Pad::GetStatus(ISIDevice::m_iDeviceNumber, &PadStatus);
+	
+	// === ADDED ===
+	if (!Movie::IsPlayingInput())
+	{
+		Lua::UpdateScripts(&PadStatus);
+	}
+	// === ===
+	
 	Movie::CallGCInputManip(&PadStatus, ISIDevice::m_iDeviceNumber);
 
 	Movie::SetPolledDevice();
@@ -129,6 +138,7 @@ bool CSIDevice_GCController::GetData(u32& _Hi, u32& _Low)
 	else
 	{
 		Movie::CheckPadStatus(&PadStatus, ISIDevice::m_iDeviceNumber);
+		Movie::InputUpdate(); // ADDED
 	}
 
 	// Thankfully changing mode does not change the high bits ;)
