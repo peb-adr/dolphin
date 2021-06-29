@@ -60,17 +60,15 @@ function GetFileContents(f)
 	}
 }
 
-// === START OF EDITTED PART ===
 // get info from git
 var gitexe = GetGitExe();
-var revision	= GetFirstStdOutLine(gitexe + cmd_revision);
-var describe	= "4.0-4222 [Lua Core]";
-var branch		= "";
-var isMaster	= 1;
-// === END ===
+var revision = GetFirstStdOutLine(gitexe + cmd_revision);
+var describe = GetFirstStdOutLine(gitexe + cmd_describe);
+var branch = GetFirstStdOutLine(gitexe + cmd_branch);
+var isMaster = +("master" == branch);
 
 // remove hash (and trailing "-0" if needed) from description
-//describe = describe.replace(/(-0)?-[^-]+(-dirty)?$/, '$2');
+describe = describe.replace(/(-0)?-[^-]+(-dirty)?$/, '$2');
 
 var out_contents =
 	"#define SCM_REV_STR \"" + revision + "\"\n" +
