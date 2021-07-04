@@ -47,11 +47,16 @@ namespace Lua
 	bool IsScriptRunning(std::string fileName);
 	void UpdateScripts(GCPadStatus* PadStatus);
 
+	bool iIsButtonPressed(const char* button);
 	void iPressButton(const char* button);
 	void iReleaseButton(const char* button);
+	int iGetMainStickX();
 	void iSetMainStickX(int xVal);
+	int iGetMainStickY();
 	void iSetMainStickY(int yVal);
+	int iGetCStickX();
 	void iSetCStickX(int xVal);
+	int iGetCStickY();
 	void iSetCStickY(int yVal);
 	void iSaveState(bool toSlot, int slotID, std::string fileName);
 	void iLoadState(bool fromSlot, int slotID, std::string fileName);

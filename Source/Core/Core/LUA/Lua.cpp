@@ -219,6 +219,19 @@ int GetPointerNormal(lua_State *L)
 	return 1; // number of return values
 }
 
+int isButtonPressed(lua_State *L)
+{
+	int argc = lua_gettop(L);
+
+	if (argc < 1)
+		return 0;
+
+	const char* button = lua_tostring(L, 1);
+
+	lua_pushboolean(L, Lua::iIsButtonPressed(button));
+	return 1; // number of return values
+}
+
 int PressButton(lua_State *L)
 {
 	if (Movie::IsPlayingInput())
@@ -253,6 +266,14 @@ int ReleaseButton(lua_State *L)
 	return 0; // number of return values
 }
 
+int GetMainStickX(lua_State *L)
+{
+	int argc = lua_gettop(L);
+
+	lua_pushinteger(L, Lua::iGetMainStickX());
+	return 1; // number of return values
+}
+
 int SetMainStickX(lua_State *L)
 {
 	if (Movie::IsPlayingInput())
@@ -268,6 +289,14 @@ int SetMainStickX(lua_State *L)
 	Lua::iSetMainStickX(xPos);
 
 	return 0;
+}
+
+int GetMainStickY(lua_State *L)
+{
+	int argc = lua_gettop(L);
+
+	lua_pushinteger(L, Lua::iGetMainStickY());
+	return 1; // number of return values
 }
 
 int SetMainStickY(lua_State *L)
@@ -287,6 +316,14 @@ int SetMainStickY(lua_State *L)
 	return 0;
 }
 
+int GetCStickX(lua_State *L)
+{
+	int argc = lua_gettop(L);
+
+	lua_pushinteger(L, Lua::iGetCStickX());
+	return 1; // number of return values
+}
+
 int SetCStickX(lua_State *L)
 {
 	if (Movie::IsPlayingInput())
@@ -302,6 +339,14 @@ int SetCStickX(lua_State *L)
 	Lua::iSetCStickX(xPos);
 
 	return 0;
+}
+
+int GetCStickY(lua_State *L)
+{
+	int argc = lua_gettop(L);
+
+	lua_pushinteger(L, Lua::iGetCStickY());
+	return 1; // number of return values
 }
 
 int SetCStickY(lua_State *L)
@@ -606,6 +651,62 @@ namespace Lua
 
 
 	//Dragonbane: Lua Wrapper Functions
+	bool iIsButtonPressed(const char* button)
+	{
+		if (!strcmp(button, "A"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[4]) != 0;
+			// PadLocal.analogA = 0xFF;
+		}
+		else if (!strcmp(button, "B"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[5]) != 0;
+			// PadLocal.analogB = 0xFF;
+		}
+		else if (!strcmp(button, "X"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[6]) != 0;
+		}
+		else if (!strcmp(button, "Y"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[7]) != 0;
+		}
+		else if (!strcmp(button, "Z"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[8]) != 0;
+		}
+		else if (!strcmp(button, "L"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[9]) != 0;
+			// PadLocal.triggerLeft = 255;
+		}
+		else if (!strcmp(button, "R"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[10]) != 0;
+			// PadLocal.triggerRight = 255;
+		}
+		else if (!strcmp(button, "Start"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[11]) != 0;
+		}
+		else if (!strcmp(button, "D-Up"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[1]) != 0;
+		}
+		else if (!strcmp(button, "D-Down"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[0]) != 0;
+		}
+		else if (!strcmp(button, "D-Left"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[2]) != 0;
+		}
+		else if (!strcmp(button, "D-Right"))
+		{
+			return (PadLocal.button & m_gc_pad_buttons_bitmask[3]) != 0;
+		}		
+		return false;
+	}
 	void iPressButton(const char* button)
 	{
 		if (!strcmp(button, "A"))
@@ -717,17 +818,33 @@ namespace Lua
 		}
 	}
 
+	int iGetMainStickX()
+	{
+		return PadLocal.stickX;
+	}
 	void iSetMainStickX(int xVal)
 	{
 		PadLocal.stickX = xVal;
+	}
+	int iGetMainStickY()
+	{
+		return PadLocal.stickY;
 	}
 	void iSetMainStickY(int yVal)
 	{
 		PadLocal.stickY = yVal;
 	}
+	int iGetCStickX()
+	{
+		return PadLocal.substickX;
+	}
 	void iSetCStickX(int xVal)
 	{
 		PadLocal.substickX = xVal;
+	}
+	int iGetCStickY()
+	{
+		return PadLocal.substickY;
 	}
 	void iSetCStickY(int yVal)
 	{
@@ -827,11 +944,16 @@ namespace Lua
 		lua_register(luaState, "WriteValueFloat", WriteValueFloat);
 		lua_register(luaState, "WriteValueString", WriteValueString);
 
+		lua_register(luaState, "isButtonPressed", isButtonPressed);
 		lua_register(luaState, "PressButton", PressButton);
 		lua_register(luaState, "ReleaseButton", ReleaseButton);
+		lua_register(luaState, "GetMainStickX", GetMainStickX);
 		lua_register(luaState, "SetMainStickX", SetMainStickX);
+		lua_register(luaState, "GetMainStickY", GetMainStickY);
 		lua_register(luaState, "SetMainStickY", SetMainStickY);
+		lua_register(luaState, "GetCStickX", GetCStickX);
 		lua_register(luaState, "SetCStickX", SetCStickX);
+		lua_register(luaState, "GetCStickY", GetCStickY);
 		lua_register(luaState, "SetCStickY", SetCStickY);
 
 		lua_register(luaState, "SaveState", SaveState);
