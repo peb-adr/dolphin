@@ -85,8 +85,8 @@ local function angleInput(angleTarget)
 	
 	local angleCamDiff = getCameraYaw() - angleTarget
 	local angleFaceDiff = angleTarget - getFacingAngle()
-	-- local angleOut = angleCamDiff - angleFaceDiff
-	local angleOut = angleCamDiff
+	local angleOut = angleCamDiff -- - angleFaceDiff
+	-- local angleOut = angleCamDiff
 	local x = math.floor(math.sin(angleOut) * 128 + 128)
 	local y = math.floor(math.cos(angleOut) * 128 + 128)
 
@@ -109,7 +109,8 @@ local function angleInput(angleTarget)
 		angleFace=getFacingAngle(),
 		angleCam=getCameraYaw(),
 		angleCamDiff=angleCamDiff,
-		angleFaceDiff=angleFaceDiff
+		angleFaceDiff=angleFaceDiff,
+		angleOut=angleOut
 	}
 
 end
