@@ -1,0 +1,29 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "rebuild scripts",
+            "type": "shell",
+            "command": "./rebuild_scripts.sh",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "run plot",
+            "type": "shell",
+            "command": "py plot.py",
+            "options": {
+                "cwd": "C:/Users/ad/Documents/repos/dolphin/Binary/x64"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
