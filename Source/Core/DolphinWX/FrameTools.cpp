@@ -1671,11 +1671,25 @@ void CFrame::OnUndoSaveState(wxCommandEvent& WXUNUSED (event))
 		State::UndoSaveState();
 }
 
-// === ADDED FUNCTION ===
+// === ADDED FUNCTIONS ===
 void CFrame::OnScriptLaunch(wxCommandEvent& WXUNUSED(event))
 {
 	g_ScriptLauncher->Show(true);
 	g_ScriptLauncher->Shown();
+}
+
+void CFrame::OnStartScript(wxCommandEvent& event)
+{
+	int id = event.GetId();
+	int slot = id - IDM_STARTSCRIPTSLOT1 + 1;
+	g_ScriptLauncher->StartScriptSlot(slot);
+}
+
+void CFrame::OnCancelScript(wxCommandEvent& event)
+{
+	int id = event.GetId();
+	int slot = id - IDM_CANCELSCRIPTSLOT1 + 1;
+	g_ScriptLauncher->CancelScriptSlot(slot);
 }
 // === ===
 
@@ -1780,7 +1794,10 @@ void CFrame::UpdateGUI()
 	{
 		if (GetCmdForHotkey(i) == -1)
 			continue;
-		GetMenuBar()->FindItem(GetCmdForHotkey(i))->SetItemLabel(GetMenuLabel(i));
+		wxMenuItem* item = GetMenuBar()->FindItem(GetCmdForHotkey(i));
+		if (item == nullptr)
+			continue;
+		item->SetItemLabel(GetMenuLabel(i));
 	}
 
 	GetMenuBar()->FindItem(IDM_LOADSTATE)->Enable(Initialized);

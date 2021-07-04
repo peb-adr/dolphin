@@ -70,16 +70,28 @@ LuaWindow::LuaWindow(wxWindow* parent, wxWindowID id, const wxString& title, con
 	m_choice_script = new wxChoice(this, 1, wxDefaultPosition, wxSize(200, -1), m_choice_scriptChoices, 0);
 	fgSizer1->Add(m_choice_script, 0, wxALIGN_CENTER | wxALL, 10);
 
-	fgSizer1->Add(0, 10, 1, wxEXPAND, 5);
-	fgSizer1->Add(0, 10, 1, wxEXPAND, 5);
-
 	m_button4 = new wxButton(this, 2, wxT("Start"), wxDefaultPosition, wxDefaultSize, 0);
 	fgSizer1->Add(m_button4, 0, wxALIGN_RIGHT | wxLEFT, 50);
 
 	m_button5 = new wxButton(this, 3, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0);
 	fgSizer1->Add(m_button5, 0, wxALIGN_CENTER | wxRIGHT, 10);
 
-	fgSizer1->AddSpacer(20);
+	fgSizer1->Add(0, 30, 1, wxEXPAND, 5);
+	fgSizer1->Add(0, 30, 1, wxEXPAND, 5);
+
+	// Slot selector
+	for (int i = 0; i < 10; i++)
+	{
+		wxString s = wxString::Format(_("Slot %d:"), i + 1);
+		m_staticTextSlots[i] = new wxStaticText(this, wxID_ANY, s, wxDefaultPosition, wxDefaultSize, 0);
+		m_staticTextSlots[i]->Wrap(-1);
+		m_staticTextSlots[i]->SetFont(wxFont(wxNORMAL_FONT->GetPointSize(), 70, 90, 92, false, wxEmptyString));
+		fgSizer1->Add(m_staticTextSlots[i], 0, wxALIGN_CENTER, 2);
+
+		wxArrayString m_choice_scriptChoices;
+		m_choice_scriptSlots[i] = new wxChoice(this, 1, wxDefaultPosition, wxSize(200, -1), m_choice_scriptChoices, 0);
+		fgSizer1->Add(m_choice_scriptSlots[i], 0, wxALIGN_CENTER | wxALL, 2);
+	}
 
 	SetSizer(fgSizer1);
 	Layout();
@@ -91,6 +103,73 @@ LuaWindow::LuaWindow(wxWindow* parent, wxWindowID id, const wxString& title, con
 	Bind(wxEVT_CLOSE_WINDOW, &LuaWindow::OnCloseWindow, this);
 }
 
+void LuaWindow::StartScriptSlot(int scriptSlot)
+{
+	wxString selectedScriptName = m_choice_scriptSlots[scriptSlot - 1]->GetStringSelection();
+	StartScript(selectedScriptName);
+}
+
+void LuaWindow::CancelScriptSlot(int scriptSlot)
+{
+	wxString selectedScriptName = m_choice_scriptSlots[scriptSlot - 1]->GetStringSelection();
+	CancelScript(selectedScriptName);
+}
+
+void LuaWindow::StartScript(wxString scriptName)
+{
+	if (!CheckScript(scriptName))
+		return;
+
+	std::string FileName = WxStrToStr(scriptName);
+
+	if (File::Exists(File::GetExeDirectory() + "\\Scripts\\" + FileName) == false)
+	{
+		wxMessageBox("Script file does not exist!");
+		return;
+	}
+
+	if (Lua::IsScriptRunning(FileName))
+	{
+		wxMessageBox("Script is already running!");
+		return;
+	}
+
+	Lua::LoadScript(FileName);
+}
+
+void LuaWindow::CancelScript(wxString scriptName)
+{
+	if (!CheckScript(scriptName))
+		return;
+
+	std::string FileName = WxStrToStr(scriptName);
+
+	if (Lua::IsScriptRunning(FileName) == false)
+	{
+		wxMessageBox("Script is not loaded!");
+		return;
+	}
+
+	Lua::TerminateScript(FileName);
+}
+
+bool LuaWindow::CheckScript(wxString scriptName)
+{
+	if (!Core::IsRunningAndStarted())
+	{
+		wxMessageBox("A game needs to be running in order to execute scripts!");
+		return false;
+	}
+
+	if (scriptName == wxEmptyString || scriptName.Len() < 3)
+	{
+		wxMessageBox("No script selected!");
+		return false;
+	}
+
+	return true;
+}
+
 void LuaWindow::OnSelectionChanged(wxCommandEvent& event)
 {
 	if (event.GetId() == 1) //Script Selection
@@ -100,49 +179,13 @@ void LuaWindow::OnSelectionChanged(wxCommandEvent& event)
 
 void LuaWindow::OnButtonPressed(wxCommandEvent& event)
 {
-	if (!Core::IsRunningAndStarted())
-	{
-		wxMessageBox("A game needs to be running in order to execute scripts!");
-		return;
-	}
-
 	wxString selectedScriptName = m_choice_script->GetStringSelection();
 
-	if (selectedScriptName == wxEmptyString || selectedScriptName.Len() < 3)
-	{
-		wxMessageBox("No script selected!");
-		return;
-	}
-
-	std::string FileName = WxStrToStr(selectedScriptName);
-
 	if (event.GetId() == 2) //Start
-	{
-		if (File::Exists(File::GetExeDirectory() + "\\Scripts\\" + FileName) == false)
-		{
-			wxMessageBox("Script file does not exist anymore!");
-			return;
-		}
-
-		if (Lua::IsScriptRunning(FileName))
-		{
-			wxMessageBox("Script is already running!");
-			return;
-		}
-
-		Lua::LoadScript(FileName);
-	}
+		StartScript(selectedScriptName);
 
 	if (event.GetId() == 3) //Cancel
-	{
-		if (Lua::IsScriptRunning(FileName) == false)
-		{
-			wxMessageBox("Script is not loaded!");
-			return;
-		}
-
-		Lua::TerminateScript(FileName);
-	}
+		CancelScript(selectedScriptName);
 }
 
 void LuaWindow::Shown()
@@ -170,6 +213,10 @@ void LuaWindow::Shown()
 			if (FileName.substr(0, 1).compare("_") && FileName.compare("Superswim"))
 			{
 				m_choice_script->Append(StrToWxStr(FileName + ".lua"));
+				for (int i = 0; i < 10; i++)
+				{
+					m_choice_scriptSlots[i]->Append(StrToWxStr(FileName + ".lua"));
+				}
 			}
 		}
 	}

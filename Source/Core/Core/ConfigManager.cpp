@@ -118,6 +118,27 @@ static const struct
 	{ "UndoSaveState",       351 /* WXK_F12 */,   4 /* wxMOD_SHIFT */ },
 	{ "SaveStateFile",       0,                   0 /* wxMOD_NONE */ },
 	{ "LoadStateFile",       0,                   0 /* wxMOD_NONE */ },
+
+	{ "StartScriptSlot1",   0, 0 },
+	{ "StartScriptSlot2",   0, 0 },
+	{ "StartScriptSlot3",   0, 0 },
+	{ "StartScriptSlot4",   0, 0 },
+	{ "StartScriptSlot5",   0, 0 },
+	{ "StartScriptSlot6",   0, 0 },
+	{ "StartScriptSlot7",   0, 0 },
+	{ "StartScriptSlot8",   0, 0 },
+	{ "StartScriptSlot9",   0, 0 },
+	{ "StartScriptSlot10",  0, 0 },
+	{ "CancelScriptSlot1",  0, 0 },
+	{ "CancelScriptSlot2",  0, 0 },
+	{ "CancelScriptSlot3",  0, 0 },
+	{ "CancelScriptSlot4",  0, 0 },
+	{ "CancelScriptSlot5",  0, 0 },
+	{ "CancelScriptSlot6",  0, 0 },
+	{ "CancelScriptSlot7",  0, 0 },
+	{ "CancelScriptSlot8",  0, 0 },
+	{ "CancelScriptSlot9",  0, 0 },
+	{ "CancelScriptSlot10", 0, 0 },
 };
 
 SConfig::SConfig()

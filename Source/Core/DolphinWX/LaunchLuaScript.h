@@ -41,15 +41,22 @@ private:
 	DECLARE_EVENT_TABLE();
 
 protected:
-	wxChoice* m_choice_script;
 	wxPanel* m_panel1;
 	wxButton* m_button4;
 	wxButton* m_button5;
 	wxStaticText* m_staticText10;
+	wxChoice* m_choice_script;
+	wxStaticText* m_staticTextSlots[10];
+	wxChoice* m_choice_scriptSlots[10];
 
 public:
 
 	LuaWindow(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Launch Script by DB"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style  = wxDEFAULT_DIALOG_STYLE | wxSTAY_ON_TOP);
+	void StartScript(wxString scriptName);
+	void StartScriptSlot(int scriptSlot);
+	void CancelScript(wxString scriptName);
+	void CancelScriptSlot(int scriptSlot);
+	bool CheckScript(wxString scriptName);
 	void OnSelectionChanged(wxCommandEvent& event);
 	void OnButtonPressed(wxCommandEvent& event);
 	void OnCloseWindow(wxCloseEvent& event);

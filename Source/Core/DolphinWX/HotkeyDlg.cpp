@@ -194,7 +194,8 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls()
 	const wxString pageNames[] =
 	{
 		_("General"),
-		_("State Saves")
+		_("State Saves"),
+		_("Scripts")
 	};
 
 	const wxString hkText[] =
@@ -281,9 +282,30 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls()
 		_("Undo Save State"),
 		_("Save State"),
 		_("Load State"),
+
+		_("Start Script Slot 1"),
+		_("Start Script Slot 2"),
+		_("Start Script Slot 3"),
+		_("Start Script Slot 4"),
+		_("Start Script Slot 5"),
+		_("Start Script Slot 6"),
+		_("Start Script Slot 7"),
+		_("Start Script Slot 8"),
+		_("Start Script Slot 9"),
+		_("Start Script Slot 10"),
+		_("Cancel Script Slot 1"),
+		_("Cancel Script Slot 2"),
+		_("Cancel Script Slot 3"),
+		_("Cancel Script Slot 4"),
+		_("Cancel Script Slot 5"),
+		_("Cancel Script Slot 6"),
+		_("Cancel Script Slot 7"),
+		_("Cancel Script Slot 8"),
+		_("Cancel Script Slot 9"),
+		_("Cancel Script Slot 10")
 	};
 
-	const int page_breaks[3] = {HK_OPEN, HK_LOAD_STATE_SLOT_1, NUM_HOTKEYS};
+	const int page_breaks[4] = {HK_OPEN, HK_LOAD_STATE_SLOT_1, HK_START_SCRIPT_SLOT_1, NUM_HOTKEYS};
 
 	// Configuration controls sizes
 	wxSize size(100,20);
@@ -292,7 +314,7 @@ void HotkeyConfigDialog::CreateHotkeyGUIControls()
 
 	wxNotebook *Notebook = new wxNotebook(this, wxID_ANY);
 
-	for (int j = 0; j < 2; j++)
+	for (int j = 0; j < 3; j++)
 	{
 		wxPanel *Page = new wxPanel(Notebook, wxID_ANY);
 		Notebook->AddPage(Page, pageNames[j]);
