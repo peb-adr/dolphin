@@ -119,6 +119,29 @@ core.angleInput = angleInput
 
 
 
+local function atan2(y, x)
+	if x > 0 then
+		return math.atan(y/x)
+	end
+	if x < 0 and y >= 0 then
+		return math.atan(y/x) + math.pi
+	end
+	if x < 0 and y < 0 then
+		return math.atan(y/x) - math.pi
+	end
+	if x == 0 and y > 0 then
+		return math.pi / 2
+	end
+	if x == 0 and y < 0 then
+		return -math.pi / 2
+	end
+	if x == 0 and y == 0 then
+		return nil
+	end
+end
+core.atan2 = atan2
+
+
 
 
 -- THC's Sonic functions

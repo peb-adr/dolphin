@@ -9,15 +9,39 @@ function onScriptCancel()
 end
 
 function onScriptUpdate()
-    s = 0.25
-    xOld = GetMainStickX()
-    yOld = GetMainStickY()
-    xNew = math.floor((s * (xOld - 128)) + 128)
-    yNew = math.floor((s * (yOld - 128)) + 128)
-    SetMainStickX(xNew)
-    SetMainStickY(yNew)
-    
-    -- MsgBox(string.format("X: %d, Y: %d | X: %d, Y: %d", xOld, yOld, xNew, yNew))
+    ------------------------------------------------------
+	-- WORKING DEFLECTION CAP USING SMILEYS QUICK MATHS --
+	------------------------------------------------------
+	
+	cap = 0.23
+
+	xIn = GetMainStickX() - 128
+	yIn = GetMainStickY() - 128
+	length = math.sqrt(xIn * xIn + yIn * yIn)
+	x = xIn / length
+	y = yIn / length
+
+	m = math.pi / 4
+	a = core.atan2(y,x) % (2 * m)
+	if a > m then a = 2 * m - a end
+	s = cap / math.cos(a)
+
+	-- x = x * s
+	-- y = y * s
+
+	-- x = (x * 128) + 128
+	-- y = (y * 128) + 128
+	
+	-- x = math.floor(x)
+	-- y = math.floor(y)
+
+	xOut = math.floor(s * x * 128)
+	yOut = math.floor(s * y * 128)
+	
+	if length > cap * 128 then
+		SetMainStickX(xOut + 128)
+		SetMainStickY(yOut + 128)
+	end
 end
 
 function onStateLoaded()
