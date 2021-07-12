@@ -46,8 +46,12 @@ protected:
 	wxButton* m_button5;
 	wxStaticText* m_staticText10;
 	wxChoice* m_choice_script;
+	wxButton* m_buttonScriptOpt;
 	wxStaticText* m_staticTextSlots[10];
 	wxChoice* m_choice_scriptSlots[10];
+	wxButton* m_buttonScriptOptSlots[10];
+
+	wxStaticText* m_staticTextOpt;
 
 public:
 
@@ -59,8 +63,46 @@ public:
 	bool CheckScript(wxString scriptName);
 	void OnSelectionChanged(wxCommandEvent& event);
 	void OnButtonPressed(wxCommandEvent& event);
+	void OnOptButtonPressed(wxCommandEvent& event);
 	void OnCloseWindow(wxCloseEvent& event);
 
 	void Shown();
+
+private:
+	wxBoxSizer* makeScriptSelect(wxString& label, wxStaticText** text, wxChoice** choice, wxButton** button);
+
+
+
+public:
+	class OptionsDialog : public wxDialog
+	{
+	private:
+
+		DECLARE_EVENT_TABLE();
+
+	public:
+
+		OptionsDialog(wxWindow* parent, const wxString& scriptName, std::string filename, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE | wxSTAY_ON_TOP);
+
+		void OnButtonPressed(wxCommandEvent& event);
+		void OnTextChanged(wxCommandEvent& event);
+		void OnCloseWindow(wxCloseEvent& event);
+
+	protected:
+
+		wxString m_scriptName;
+		std::string m_filename;
+		bool m_changed;
+
+		wxStaticText* m_commentHintT;
+		wxStaticText* m_commentHint;
+		wxTextCtrl* m_textBox;
+		wxButton* m_buttonSave;
+		wxButton* m_buttonDiscard;
+
+	private:
+		void saveToFile();
+
+	};
 
 };

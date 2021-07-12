@@ -48,6 +48,7 @@ BEGIN_EVENT_TABLE(LuaWindow, wxDialog)
 EVT_CHOICE(1, LuaWindow::OnSelectionChanged) //Script Selection
 EVT_BUTTON(2, LuaWindow::OnButtonPressed) //Start
 EVT_BUTTON(3, LuaWindow::OnButtonPressed) //Cancel
+EVT_BUTTON(4, LuaWindow::OnOptButtonPressed) //OPT
 
 END_EVENT_TABLE()
 
@@ -55,53 +56,65 @@ LuaWindow::LuaWindow(wxWindow* parent, wxWindowID id, const wxString& title, con
 {
 	SetSizeHints(wxDefaultSize, wxDefaultSize);
 
-	wxFlexGridSizer* fgSizer1;
-	fgSizer1 = new wxFlexGridSizer(0, 2, 0, 0);
-	fgSizer1->SetFlexibleDirection(wxBOTH);
-	fgSizer1->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+	// Manual selector
+	wxBoxSizer* sizer;
+	sizer = new wxBoxSizer(wxVERTICAL);
+	sizer->Add(makeScriptSelect(wxString(wxT("Script File:")), &m_staticText10, &m_choice_script, &m_buttonScriptOpt), 0, wxALIGN_RIGHT);
 
-	m_staticText10 = new wxStaticText(this, wxID_ANY, wxT("Script File:"), wxDefaultPosition, wxDefaultSize, 0);
-	m_staticText10->Wrap(-1);
-	m_staticText10->SetFont(wxFont(wxNORMAL_FONT->GetPointSize(), 70, 90, 92, false, wxEmptyString));
-	fgSizer1->Add(m_staticText10, 0, wxALIGN_CENTER | wxALL, 25);
+	sizer->AddSpacer(5);
 
-	//Script Choice
-	wxArrayString m_choice_scriptChoices;
-	m_choice_script = new wxChoice(this, 1, wxDefaultPosition, wxSize(200, -1), m_choice_scriptChoices, 0);
-	fgSizer1->Add(m_choice_script, 0, wxALIGN_CENTER | wxALL, 10);
-
+	// Start/Cancel buttons
+	wxBoxSizer* buttonsizer;
+	buttonsizer = new wxBoxSizer(wxHORIZONTAL);
 	m_button4 = new wxButton(this, 2, wxT("Start"), wxDefaultPosition, wxDefaultSize, 0);
-	fgSizer1->Add(m_button4, 0, wxALIGN_RIGHT | wxLEFT, 50);
-
+	buttonsizer->Add(m_button4, 0, wxALIGN_RIGHT | wxLEFT, 50);
+	buttonsizer->AddSpacer(30);
 	m_button5 = new wxButton(this, 3, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0);
-	fgSizer1->Add(m_button5, 0, wxALIGN_CENTER | wxRIGHT, 10);
+	buttonsizer->Add(m_button5, 0, wxALIGN_CENTER | wxRIGHT, 10);
+	sizer->Add(buttonsizer);
 
-	fgSizer1->Add(0, 30, 1, wxEXPAND, 5);
-	fgSizer1->Add(0, 30, 1, wxEXPAND, 5);
+	sizer->AddSpacer(20);
 
-	// Slot selector
+	// Slot selectors
 	for (int i = 0; i < 10; i++)
 	{
-		wxString s = wxString::Format(_("Slot %d:"), i + 1);
-		m_staticTextSlots[i] = new wxStaticText(this, wxID_ANY, s, wxDefaultPosition, wxDefaultSize, 0);
-		m_staticTextSlots[i]->Wrap(-1);
-		m_staticTextSlots[i]->SetFont(wxFont(wxNORMAL_FONT->GetPointSize(), 70, 90, 92, false, wxEmptyString));
-		fgSizer1->Add(m_staticTextSlots[i], 0, wxALIGN_CENTER, 2);
-
-		wxArrayString m_choice_scriptChoices;
-		m_choice_scriptSlots[i] = new wxChoice(this, 1, wxDefaultPosition, wxSize(200, -1), m_choice_scriptChoices, 0);
-		fgSizer1->Add(m_choice_scriptSlots[i], 0, wxALIGN_CENTER | wxALL, 2);
+		sizer->Add(makeScriptSelect(wxString::Format(_("Slot %d:"), i + 1), &m_staticTextSlots[i], &m_choice_scriptSlots[i], &m_buttonScriptOptSlots[i]), 0, wxALIGN_RIGHT);
 	}
 
-	SetSizer(fgSizer1);
+	wxBoxSizer* outersizer;
+	outersizer = new wxBoxSizer(wxVERTICAL);
+	outersizer->Add(sizer, 0, wxALL, 10);
+	SetSizer(outersizer);
 	Layout();
-
-	fgSizer1->Fit(this);
-
+	outersizer->Fit(this);
 	Centre(wxBOTH);
 
 	Bind(wxEVT_CLOSE_WINDOW, &LuaWindow::OnCloseWindow, this);
 }
+
+wxBoxSizer* LuaWindow::makeScriptSelect(wxString& label, wxStaticText** text, wxChoice** choice, wxButton** button)
+{
+	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+
+	// Label
+	*text = new wxStaticText(this, wxID_ANY, label, wxDefaultPosition, wxDefaultSize, 0);
+	(*text)->Wrap(-1);
+	(*text)->SetFont(wxFont(wxNORMAL_FONT->GetPointSize(), 70, 90, 92, false, wxEmptyString));
+	sizer->Add(*text, 0, wxRIGHT, 15);
+
+	// Choice
+	wxArrayString m_choice_scriptChoices;
+	*choice = new wxChoice(this, 1, wxDefaultPosition, wxSize(200, -1), m_choice_scriptChoices, 0);
+	sizer->Add(*choice, 0, wxALIGN_RIGHT | wxRIGHT, 5);
+
+	// OPT Button
+	*button = new wxButton(this, 4, wxT("OPT"), wxDefaultPosition, wxDefaultSize, 0);
+	(*button)->SetClientData(*choice);
+	sizer->Add(*button, 0, wxALIGN_RIGHT);
+
+	return sizer;
+}
+
 
 void LuaWindow::StartScriptSlot(int scriptSlot)
 {
@@ -188,6 +201,19 @@ void LuaWindow::OnButtonPressed(wxCommandEvent& event)
 		CancelScript(selectedScriptName);
 }
 
+void LuaWindow::OnOptButtonPressed(wxCommandEvent& event)
+{
+	wxButton* b = (wxButton*) event.GetEventObject();
+	wxChoice* cc = (wxChoice*)b->GetClientData();
+	wxString selectedScriptName = cc->GetStringSelection();
+
+	std::string filename = File::GetExeDirectory() + "\\Scripts\\" + selectedScriptName.ToStdString() + ".opt";
+	if (File::Exists(filename))
+		(new OptionsDialog(this, selectedScriptName, filename))->Show();
+	else
+		wxMessageBox("Script options file does not exist!");
+}
+
 void LuaWindow::Shown()
 {
 	//Refresh Script List
@@ -229,4 +255,74 @@ void LuaWindow::OnCloseWindow(wxCloseEvent& event)
 		event.Skip(false);
 		Show(false);
 	}
+}
+
+
+BEGIN_EVENT_TABLE(LuaWindow::OptionsDialog, wxDialog)
+
+EVT_TEXT(10, LuaWindow::OptionsDialog::OnTextChanged) // Changed
+EVT_BUTTON(11, LuaWindow::OptionsDialog::OnButtonPressed) // Save
+EVT_BUTTON(12, LuaWindow::OptionsDialog::OnButtonPressed) // Discard
+
+END_EVENT_TABLE()
+
+LuaWindow::OptionsDialog::OptionsDialog(wxWindow* parent, const wxString& scriptName, std::string filename, wxWindowID id, const wxPoint& pos, const wxSize& size, long style)
+: wxDialog(parent, id, wxString::Format("Options file %s.opt", scriptName), pos, size, style), m_scriptName(scriptName), m_filename(filename), m_changed(false)
+{
+	wxBoxSizer* sizer;
+	sizer = new wxBoxSizer(wxVERTICAL);
+	// comment hint
+	wxString hintT("HINT:");
+	m_commentHintT = new wxStaticText(this, wxID_ANY, hintT, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
+	wxString hint("Everything between '--' and the end of the line is considered a comment and will be ignored by the Lua engine (:");
+	m_commentHint = new wxStaticText(this, wxID_ANY, hint, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
+	m_commentHint->Wrap(300);
+	sizer->Add(m_commentHintT, 0, wxALIGN_CENTER | wxUP, 5);
+	sizer->Add(m_commentHint, 0, wxALIGN_CENTER, 0);
+	// text box
+	std::string filecontent;
+	File::ReadFileToString(m_filename, filecontent);
+	m_textBox = new wxTextCtrl(this, 10, wxString(filecontent), wxDefaultPosition, wxSize(300, 200), wxTE_MULTILINE | wxTE_DONTWRAP | wxTE_PROCESS_TAB);
+	sizer->Add(m_textBox, 0, wxALIGN_CENTER | wxALL, 5);
+	// buttons
+	wxBoxSizer* buttonsizer;
+	buttonsizer = new wxBoxSizer(wxHORIZONTAL);
+	m_buttonSave = new wxButton(this, 11, wxT("Save"));
+	m_buttonDiscard = new wxButton(this, 12, wxT("Close"));
+	buttonsizer->Add(m_buttonSave, 0, wxALIGN_RIGHT);
+	buttonsizer->Add(m_buttonDiscard, 0, wxALIGN_RIGHT);
+
+	sizer->Add(buttonsizer, 0, wxALIGN_CENTER | wxDOWN, 5);
+	SetSizer(sizer);
+	Layout();
+	sizer->Fit(this);
+	Centre(wxBOTH);
+
+	Bind(wxEVT_CLOSE_WINDOW, &LuaWindow::OptionsDialog::OnCloseWindow, this);
+}
+
+void LuaWindow::OptionsDialog::saveToFile()
+{
+	File::WriteStringToFile(m_textBox->GetValue().ToStdString(), m_filename);
+	m_changed = false;
+}
+
+void LuaWindow::OptionsDialog::OnButtonPressed(wxCommandEvent& event)
+{
+	if (event.GetId() == 11) // Save
+		saveToFile();
+
+	if (event.GetId() == 12) // Close
+		Close();
+}
+
+void LuaWindow::OptionsDialog::OnTextChanged(wxCommandEvent& event)
+{
+	m_changed = true;
+}
+
+void LuaWindow::OptionsDialog::OnCloseWindow(wxCloseEvent& event)
+{
+	if (!m_changed || wxMessageBox("Changes will be discarded", "Discard?", wxOK | wxCANCEL, this) == wxOK)
+		Destroy();
 }
