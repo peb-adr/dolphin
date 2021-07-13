@@ -1,5 +1,7 @@
-local core = {}
+-- add include directory
+package.path = package.path .. ';Scripts/?.lua'
 
+local core = {}
 
 ----- GETTING DATA FROM MEMORY -----
 

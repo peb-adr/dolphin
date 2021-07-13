@@ -13,8 +13,7 @@ function onScriptUpdate()
 	-- WORKING DEFLECTION CAP USING SMILEYS QUICK MATHS --
 	------------------------------------------------------
 	
-	cap = 0.23
-
+	local cap = require "opt.bfbb_capStickDeflection"
 	xIn = GetMainStickX() - 128
 	yIn = GetMainStickY() - 128
 	length = math.sqrt(xIn * xIn + yIn * yIn)

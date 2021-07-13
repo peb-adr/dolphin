@@ -199,7 +199,7 @@ void LuaWindow::OnOptButtonPressed(wxCommandEvent& event)
 	wxChoice* cc = (wxChoice*)b->GetClientData();
 	wxString selectedScriptName = cc->GetStringSelection();
 
-	std::string filename = File::GetExeDirectory() + "\\Scripts\\" + selectedScriptName.ToStdString() + ".opt";
+	std::string filename = File::GetExeDirectory() + "\\Scripts\\opt\\" + selectedScriptName.ToStdString();
 	if (File::Exists(filename))
 		(new OptionsDialog(this, selectedScriptName, filename))->Show();
 	else
@@ -263,7 +263,7 @@ EVT_BUTTON(12, LuaWindow::OptionsDialog::OnButtonPressed) // Discard
 END_EVENT_TABLE()
 
 LuaWindow::OptionsDialog::OptionsDialog(wxWindow* parent, const wxString& scriptName, std::string filename, wxWindowID id, const wxPoint& pos, const wxSize& size, long style)
-: wxDialog(parent, id, wxString::Format("Options file %s.opt", scriptName), pos, size, style), m_scriptName(scriptName), m_filename(filename), m_changed(false)
+: wxDialog(parent, id, wxString::Format("Options for %s", scriptName), pos, size, style), m_scriptName(scriptName), m_filename(filename), m_changed(false)
 {
 	wxBoxSizer* sizer;
 	sizer = new wxBoxSizer(wxVERTICAL);
