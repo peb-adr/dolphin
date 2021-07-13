@@ -1,3 +1,8 @@
+-- load core functions
+local core = require "bfbb_core"
+-- load options file
+local options = require "opt.Example"
+
 ----- GLOBAL VARIABLES -----
 saidHello = false
 
@@ -13,9 +18,9 @@ function onScriptCancel()
 end
 
 function onScriptUpdate()
-	if saidHello == false and GetFrameCount() == 300 then
+	if saidHello == false and GetFrameCount() == 1000 then
 		saidHello = true
-		MsgBox("Test 12, 123")
+		MsgBox(string.format("%s says: %s", options.protagonist, options.message))
 	end
 end
 

@@ -1,141 +1,108 @@
-# Dolphin - A GameCube / Triforce / Wii Emulator
+# Dolphin with Lua engine
 
-[Homepage](https://dolphin-emu.org/) | [Project Site](https://github.com/dolphin-emu/dolphin) | [Forums](https://forums.dolphin-emu.org/) | [Wiki](https://wiki.dolphin-emu.org/) | [Issue Tracker](https://code.google.com/p/dolphin-emu/issues/list) | [Coding Style](https://github.com/dolphin-emu/dolphin/blob/master/Contributing.md) | [Transifex Page](https://www.transifex.com/projects/p/dolphin-emu/)
+This fork adds Lua support to version 4.0-3964 of Dolphin Emulator (main development branch is currently 'bfbb-tas-lua'). The baseline of work is taken from [Tales' very similar project](https://github.com/Tales-Carvalho/dolphin) for version 4.0-4222 which itself is based on [Dragonbane0's Zelda Edition](https://github.com/dragonbane0/dolphin).
 
-Dolphin is an emulator for running GameCube, Triforce and Wii games on
-Windows/Linux/OS X systems and recent Android devices. It's licensed under
-the terms of the GNU General Public License, version 2 (GPLv2).
+## Lua Core
 
-Please read the [FAQ](http://dolphin-emu.org/docs/faq/) before use.
+### Running scripts
 
-## System Requirements
-* OS
-    * Microsoft Windows (Vista or higher).
-    * Linux or Apple Mac OS X (10.7 or higher).
-    * Unix-like systems other than Linux might work but are not officially supported.
-* Processor
-    * A CPU with SSE2 support.
-    * A modern CPU (3 GHz and Dual Core, not older than 2008) is highly recommended.
-* Graphics
-    * A reasonably modern graphics card (Direct3D 10.0 / OpenGL 3.0).
-    * A graphics card that supports Direct3D 11 / OpenGL 4.4 is recommended.
+To run already implemented Lua scripts, go to `Tools` - `Execute Script`. In the new window, select the desired script (note that only Lua scripts in `Scripts` folder are shown in the list) and click on `Start` whenever you want to execute it. To stop the script execution, click on `Cancel`.
 
-## Installation on Windows
-Use the solution file `Source/dolphin-emu.sln` to build Dolphin on Windows.
-Visual Studio 2013 is a hard requirement since previous versions don't support
-many C++ features that we use. Other compilers might be able to build Dolphin
-on Windows but have not been tested and are not recommended to be used.
+**Important**: Please note that closing the `Execute Script` window does NOT stop the script execution. You have to click on `Cancel` while the desired script is selected to do so.
 
-An installer can be created by using the `Installer_win32.nsi` and
-`Installer_x64.nsi` scripts in the Installer directory. This will require the
-Nullsoft Scriptable Install System (NSIS) to be installed. Creating an
-installer is not necessary to run Dolphin since the Build directory contains
-a working Dolphin distribution.
+In my edition it is also possible to assign scripts to 10 slots, similar to the save states. Corresponding key bindings can be configured in the Hotkey Settings. Additionally I added a button to directly change options for a script if it provides a file for that. The convention this follows states that they are found in the `Scripts/opt` directory with the same name as the script itself.
 
-## Installation on Linux/OS X
-Dolphin requires [CMake](http://www.cmake.org/) for systems other than Windows. Many libraries are
-bundled with Dolphin and used if they're not installed on your system. CMake
-will inform you if a bundled library is used or if you need to install any
-missing packages yourself.
+### Writing new scripts
 
-### Build steps:
-1. `mkdir Build`
-2. `cd Build`
-3. `cmake ..`
-4. `make`
+You can write new scripts following the template of `Example.lua` (or any other implemented script) and save them in `Scripts` folder of the build. Dolphin will automatically recognize them after that.
 
-On OS X, an application bundle will be created in `./Binaries`.
+Generally available functions (C++ implementation and Lua binding in `Source/Core/Core/LUA/Lua.cpp`):
 
-On Linux, it's strongly recommended to perform a global installation via `sudo make install`.
+```lua
+ReadValue8(memoryAddress as Number) -- Reads 1 Byte from the address
+ReadValue16(memoryAddress as Number) -- Reads 2 Byte from the address
+ReadValue32(memoryAddress as Number) -- Reads 4 Byte from the address
+ReadValueFloat(memoryAddress as Number)  -- Reads 4 Bytes as a Float from the address
+ReadValueString(memoryAddress as Number, length as Number) -- Reads "length" amount of characters from the address as a String
+ 
+WriteValue8(memoryAddress as Number, value as Number) -- Writes 1 Byte to the address
+WriteValue16(memoryAddress as Number, value as Number) -- Writes 2 Byte to the address
+WriteValue32(memoryAddress as Number, value as Number) -- Writes 4 Byte to the address
+WriteValueFloat(memoryAddress as Number, value as Number)  -- Writes 4 Bytes as a Float to the address
+WriteValueString(memoryAddress as Number, text as String) -- Writes the string to the address
+ 
+GetPointerNormal(memoryAddress as Number) -- Reads the pointer address from the memory, checks if its valid and if so returns the normal address. You can use this function for example to get Links Pointer from the address 0x3ad860. To the return value you simply need to add the offset 0x34E4 and then do a ReadValueFloat with the resulting address to get Links speed (in TWW)
+ 
+PressButton(Button as String) -- Presses the indicated button down, can call this with "Start" for example to press the Start button down. This is a bit buggy still and Buttons need to be pressed every frame or they are automatically released
+IsButtonPressed(Button as String) -- Return a Boolean stating if the indicated button is pressed in during this frame
+ReleaseButton(Button as String) -- Releases the indicated button. Not really needed atm cause buttons are pressed for only 1 frame
+ 
+GetMainStickX(pos as Number) -- Gets the main control stick X Pos
+GetMainStickY(pos as Number) -- Gets the main control stick Y Pos
+SetMainStickX(pos as Number) -- Sets the main control stick X Pos
+SetMainStickY(pos as Number) -- Sets the main control stick Y Pos
+ 
+GetCStickX(pos as Number) -- Gets the C-Stick X Pos
+GetCStickY(pos as Number)  -- Gets the C-Stick Y Pos
+SetCStickX(pos as Number) -- Sets the C-Stick X Pos
+SetCStickY(pos as Number)  -- Sets the C-Stick Y Pos
+ 
+SaveState(useSlot as Boolean, slotID/stateName as Number/String) -- Saves the current state in the indicated slot number or fileName
+LoadState(useSlot as Boolean, slotID/stateName as Number/String) -- Loads the state from the indicated slot number or fileName
+ 
+GetFrameCount() -- Returns the current visual frame count. Can use this and a global variable for example to check for frame advancements and how long the script is running in frames
+GetInputFrameCount() -- Returns the current input frame count
 
-## Uninstalling
-When Dolphin has been installed with the NSIS installer, you can uninstall
-Dolphin like any other Windows application.
+--  The camera functions handles the emulator's internal camera (i.e. Free Look camera), so it doesn't affect gameplay itself
+CameraZoomIn(float speed = 2.0) -- Zooms the camera in with the given speed
+CameraZoomOut(float speed = 2.0) -- Zooms the camera out with the given speed
+CameraTranslate(float x, float y, float z = 0) -- Translates the camera with the given coordinates
+CameraRotate(float x, float y) -- Rotates the camera with the given angles (in radians)
+CameraReset() -- Resets the camera to its original position
+CameraGetTranslation() -- Returns the camera's local coordinates ({0,0,0} is the camera's original position)
+CameraGetRotation() -- Returns the camera's local rotation ({0,0} is the camera's original rotation)
 
-Linux users can run `cat install_manifest | xargs -d '\n' rm` from the build directory
-to uninstall Dolphin from their system.
+MsgBox(message as String, delayMS as Number) -- Dolphin will show the indicated message in the upper-left corner for the indicated length (in milliseconds). Default length is 5 seconds
+SetScreenText(string text) -- Replaces the emulator's Statistics text with the given string (requires Show Statistics to be enabled)
 
-OS X users can simply delete Dolphin.app to uninstall it.
+PauseEmulation() -- Pauses emulation. IMPORTANT: as scripts only update when the game is running, this function will also pause the script!
+ 
+CancelScript() -- Cancels the script
+```
 
-Additionally, you'll want to remove the global user directory (see below to
-see where it's stored) if you don't plan to reinstall Dolphin.
+BFBB specific available functions (Lua implementation in `Data/bfbb_core.lua`)
+```lua
+getGameID() -- Gets the GameID
+getMomentum() -- Gets Spongebobs momentum in form { X: number, Y: number, Z: number, }
+getPos() -- Gets Spongebobs position in form { X: number, Y: number, Z: number, }
+getBowlSpeed() -- Gets Spongebobs intital bowl speed as number/float
+getFacingAngle() -- Gets Spongebobs facing angle as number/float in radian
+getCameraYaw() -- Gets the camera yaw as number/float in radian
+angleInput(angleTarget as float) -- WIP attempts to calculate and input the main stick such that Spongebob faces angleTarget
 
-## Command line usage
-`Usage: Dolphin [-h] [-d] [-l] [-e <str>] [-b] [-V <str>] [-A <str>]`  
+atan2(y, x) -- implementation of atan2 following Wikipedias definition as the lua version seems to be too old to have it built in
+```
 
-* -h, --help Show this help message  
-* -d, --debugger Opens the debugger  
-* -l, --logger Opens the logger  
-* -e, --exec=<str> Loads the specified file (DOL,ELF,WAD,GCM,ISO)  
-* -b, --batch Exit Dolphin with emulator  
-* -V, --video_backend=<str> Specify a video backend  
-* -A, --audio_emulation=<str> Low level (LLE) or high level (HLE) audio  
+Lua callbacks you can implement (Create script file in `Scripts`):
 
-Available DSP emulation engines are HLE (High Level Emulation) and
-LLE (Low Level Emulation). HLE is fast but often less accurate while LLE is
-slow but close to perfect. Note that LLE has two submodes (Interpreter and
-Recompiler), which cannot be selected from the command line.
+```lua
+function onScriptStart()
+    -- called when Start button is pressed
+end
 
-Available video backends are "D3D" (only available on Windows Vista or higher),
-"OGL". There's also "Software Renderer", which uses the CPU for rendering and
-is intended for debugging purposes, only.
+function onScriptCancel()
+    -- called when Cancel button is pressed or if CancelScript() is executed
+end
 
-## Sys Files
-* `totaldb.dsy`: Database of symbols (for devs only)
-* `GC/font_ansi.bin`: font dumps
-* `GC/font_sjis.bin`: font dumps
-* `GC/dsp_coef.bin`: DSP dumps
-* `GC/dsp_rom.bin`: DSP dumps
+function onScriptUpdate()
+	-- called once every frame
+end
 
-The DSP dumps included with Dolphin have been written from scratch and do not
-contain any copyrighted material. They should work for most purposes, however
-some games implement copy protection by checksumming the dumps. You will need
-to dump the DSP files from a console and replace the default dumps if you want
-to fix those issues.
+function onStateLoaded()
+	-- called when a savestate was loaded successfully by the Lua script
+end
 
-## Folder structure
-These folders are installed read-only and should not be changed:
-
-* `GameSettings`: per-game default settings database
-* `GC`: DSP and font dumps
-* `Maps`: symbol tables (dev only)
-* `Shaders`: post-processing shaders
-* `Themes`: icon themes for GUI
-* `Wii`: default Wii NAND contents
-
-## User folder structure
-A number of user writeable directories are created for caching purposes or for
-allowing the user to edit their contents. On OS X and Linux these folders are
-stored in `~/Library/Application Support/Dolphin/` and `~/.dolphin-emu`
-respectively. On Windows the user directory is stored in the `My Documents`
-folder by default, but there are various way to override this behavior:
-
-* Creating a file called `portable.txt` next to the Dolphin executable will
-  store the user directory in a local directory called "User" next to the
-  Dolphin executable.
-* If the registry string value `LocalUserConfig` exists in
-  `HKEY_CURRENT_USER/Dolphin Emulator` and has the value **1**, Dolphin will
-  always start in portable mode.
-* If the registry string value `UserConfigPath` exists in
-  `HKEY_CURRENT_USER/Dolphin Emulator`, the user folders will be stored in the
-  directory given by that string. The other two methods will be prioritized
-  over this setting.
-
-
-List of user folders:
-
-* `Cache`: used to cache the ISO list
-* `Config`: configuration files
-* `Dump`: anything dumped from Dolphin
-* `GameConfig`: additional settings to be applied per-game
-* `GC`: memory cards and system BIOS
-* `Load`: custom textures
-* `Logs`: logs, if enabled
-* `ScreenShots`: screenshots taken via Dolphin
-* `StateSaves`: save states
-* `Wii`: Wii NAND contents
-
-## Custom textures
-Custom textures have to be placed in the user directory under
-`Load/Textures/[GameID]/`. You can find the Game ID by right-clicking a game
-in the ISO list and selecting "ISO Properties".
+function onStateSaved()
+	-- called when a savestate was saved successfully by the Lua script
+end
+```
