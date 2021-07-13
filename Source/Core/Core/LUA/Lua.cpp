@@ -219,7 +219,7 @@ int GetPointerNormal(lua_State *L)
 	return 1; // number of return values
 }
 
-int isButtonPressed(lua_State *L)
+int IsButtonPressed(lua_State *L)
 {
 	int argc = lua_gettop(L);
 
@@ -944,7 +944,7 @@ namespace Lua
 		lua_register(luaState, "WriteValueFloat", WriteValueFloat);
 		lua_register(luaState, "WriteValueString", WriteValueString);
 
-		lua_register(luaState, "isButtonPressed", isButtonPressed);
+		lua_register(luaState, "IsButtonPressed", IsButtonPressed);
 		lua_register(luaState, "PressButton", PressButton);
 		lua_register(luaState, "ReleaseButton", ReleaseButton);
 		lua_register(luaState, "GetMainStickX", GetMainStickX);

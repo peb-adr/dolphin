@@ -115,7 +115,7 @@ function onScriptUpdate()
 	-- PLOT STICK POSITIONS IN ANGLE INTERVALS --
 	---------------------------------------------
 
-	-- if isButtonPressed('R') then
+	-- if IsButtonPressed('R') then
 	-- 	if not rheld then
 	-- 		rpressed = true
 	-- 		rheld = true
