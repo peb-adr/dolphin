@@ -45,10 +45,9 @@
 //Dragonbane
 BEGIN_EVENT_TABLE(LuaWindow, wxDialog)
 
-EVT_CHOICE(1, LuaWindow::OnSelectionChanged) //Script Selection
-EVT_BUTTON(2, LuaWindow::OnButtonPressed) //Start
-EVT_BUTTON(3, LuaWindow::OnButtonPressed) //Cancel
-EVT_BUTTON(4, LuaWindow::OnOptButtonPressed) //OPT
+EVT_BUTTON(1, LuaWindow::OnButtonPressed) //Start
+EVT_BUTTON(2, LuaWindow::OnButtonPressed) //Cancel
+EVT_BUTTON(3, LuaWindow::OnOptButtonPressed) //OPT
 
 END_EVENT_TABLE()
 
@@ -59,18 +58,18 @@ LuaWindow::LuaWindow(wxWindow* parent, wxWindowID id, const wxString& title, con
 	// Manual selector
 	wxBoxSizer* sizer;
 	sizer = new wxBoxSizer(wxVERTICAL);
-	sizer->Add(makeScriptSelect(wxString(wxT("Script File:")), &m_staticText10, &m_choice_script, &m_buttonScriptOpt), 0, wxALIGN_RIGHT);
+	sizer->Add(makeScriptSelect(wxString(wxT("Script File:")), &m_scriptLabel, &m_scriptChoice, &m_scriptOptButton), 0, wxALIGN_RIGHT);
 
 	sizer->AddSpacer(5);
 
 	// Start/Cancel buttons
 	wxBoxSizer* buttonsizer;
 	buttonsizer = new wxBoxSizer(wxHORIZONTAL);
-	m_button4 = new wxButton(this, 2, wxT("Start"), wxDefaultPosition, wxDefaultSize, 0);
-	buttonsizer->Add(m_button4, 0, wxALIGN_RIGHT | wxLEFT, 50);
+	m_buttonStart = new wxButton(this, 1, wxT("Start"), wxDefaultPosition, wxDefaultSize, 0);
+	buttonsizer->Add(m_buttonStart, 0, wxALIGN_RIGHT | wxLEFT, 50);
 	buttonsizer->AddSpacer(30);
-	m_button5 = new wxButton(this, 3, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0);
-	buttonsizer->Add(m_button5, 0, wxALIGN_CENTER | wxRIGHT, 10);
+	m_buttonCancel = new wxButton(this, 2, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0);
+	buttonsizer->Add(m_buttonCancel, 0, wxALIGN_CENTER | wxRIGHT, 10);
 	sizer->Add(buttonsizer);
 
 	sizer->AddSpacer(20);
@@ -78,7 +77,7 @@ LuaWindow::LuaWindow(wxWindow* parent, wxWindowID id, const wxString& title, con
 	// Slot selectors
 	for (int i = 0; i < 10; i++)
 	{
-		sizer->Add(makeScriptSelect(wxString::Format(_("Slot %d:"), i + 1), &m_staticTextSlots[i], &m_choice_scriptSlots[i], &m_buttonScriptOptSlots[i]), 0, wxALIGN_RIGHT);
+		sizer->Add(makeScriptSelect(wxString::Format(_("Slot %d:"), i + 1), &m_scriptLabelSlots[i], &m_scriptChoiceSlots[i], &m_scriptOptButtonSlots[i]), 0, wxALIGN_RIGHT);
 	}
 
 	wxBoxSizer* outersizer;
@@ -103,12 +102,12 @@ wxBoxSizer* LuaWindow::makeScriptSelect(wxString& label, wxStaticText** text, wx
 	sizer->Add(*text, 0, wxRIGHT, 15);
 
 	// Choice
-	wxArrayString m_choice_scriptChoices;
-	*choice = new wxChoice(this, 1, wxDefaultPosition, wxSize(200, -1), m_choice_scriptChoices, 0);
+	wxArrayString choicelist;
+	*choice = new wxChoice(this, 1, wxDefaultPosition, wxSize(200, -1), choicelist, 0);
 	sizer->Add(*choice, 0, wxALIGN_RIGHT | wxRIGHT, 5);
 
 	// OPT Button
-	*button = new wxButton(this, 4, wxT("OPT"), wxDefaultPosition, wxDefaultSize, 0);
+	*button = new wxButton(this, 3, wxT("OPT"), wxDefaultPosition, wxDefaultSize, 0);
 	(*button)->SetClientData(*choice);
 	sizer->Add(*button, 0, wxALIGN_RIGHT);
 
@@ -118,13 +117,13 @@ wxBoxSizer* LuaWindow::makeScriptSelect(wxString& label, wxStaticText** text, wx
 
 void LuaWindow::StartScriptSlot(int scriptSlot)
 {
-	wxString selectedScriptName = m_choice_scriptSlots[scriptSlot - 1]->GetStringSelection();
+	wxString selectedScriptName = m_scriptChoiceSlots[scriptSlot - 1]->GetStringSelection();
 	StartScript(selectedScriptName);
 }
 
 void LuaWindow::CancelScriptSlot(int scriptSlot)
 {
-	wxString selectedScriptName = m_choice_scriptSlots[scriptSlot - 1]->GetStringSelection();
+	wxString selectedScriptName = m_scriptChoiceSlots[scriptSlot - 1]->GetStringSelection();
 	CancelScript(selectedScriptName);
 }
 
@@ -133,21 +132,21 @@ void LuaWindow::StartScript(wxString scriptName)
 	if (!CheckScript(scriptName))
 		return;
 
-	std::string FileName = WxStrToStr(scriptName);
+	std::string filename = WxStrToStr(scriptName);
 
-	if (File::Exists(File::GetExeDirectory() + "\\Scripts\\" + FileName) == false)
+	if (File::Exists(File::GetExeDirectory() + "\\Scripts\\" + filename) == false)
 	{
 		wxMessageBox("Script file does not exist!");
 		return;
 	}
 
-	if (Lua::IsScriptRunning(FileName))
+	if (Lua::IsScriptRunning(filename))
 	{
 		wxMessageBox("Script is already running!");
 		return;
 	}
 
-	Lua::LoadScript(FileName);
+	Lua::LoadScript(filename);
 }
 
 void LuaWindow::CancelScript(wxString scriptName)
@@ -155,15 +154,15 @@ void LuaWindow::CancelScript(wxString scriptName)
 	if (!CheckScript(scriptName))
 		return;
 
-	std::string FileName = WxStrToStr(scriptName);
+	std::string filename = WxStrToStr(scriptName);
 
-	if (Lua::IsScriptRunning(FileName) == false)
+	if (Lua::IsScriptRunning(filename) == false)
 	{
 		wxMessageBox("Script is not loaded!");
 		return;
 	}
 
-	Lua::TerminateScript(FileName);
+	Lua::TerminateScript(filename);
 }
 
 bool LuaWindow::CheckScript(wxString scriptName)
@@ -183,21 +182,14 @@ bool LuaWindow::CheckScript(wxString scriptName)
 	return true;
 }
 
-void LuaWindow::OnSelectionChanged(wxCommandEvent& event)
-{
-	if (event.GetId() == 1) //Script Selection
-	{
-	}
-}
-
 void LuaWindow::OnButtonPressed(wxCommandEvent& event)
 {
-	wxString selectedScriptName = m_choice_script->GetStringSelection();
+	wxString selectedScriptName = m_scriptChoice->GetStringSelection();
 
-	if (event.GetId() == 2) //Start
+	if (event.GetId() == 1) //Start
 		StartScript(selectedScriptName);
 
-	if (event.GetId() == 3) //Cancel
+	if (event.GetId() == 2) //Cancel
 		CancelScript(selectedScriptName);
 }
 
@@ -217,31 +209,35 @@ void LuaWindow::OnOptButtonPressed(wxCommandEvent& event)
 void LuaWindow::Shown()
 {
 	//Refresh Script List
-	m_choice_script->Clear();
+	m_scriptChoice->Clear();
+	for (int i = 0; i < 10; i++)
+	{
+		m_scriptChoiceSlots[i]->Clear();
+	}
 
 	//Find all Lua files
-	CFileSearch::XStringVector Directory;
-	Directory.push_back(File::GetExeDirectory() + "\\Scripts");
+	CFileSearch::XStringVector directory;
+	directory.push_back(File::GetExeDirectory() + "\\Scripts");
 
-	CFileSearch::XStringVector Extension;
-	Extension.push_back("*.lua");
+	CFileSearch::XStringVector extension;
+	extension.push_back("*.lua");
 
-	CFileSearch FileSearch(Extension, Directory);
+	CFileSearch FileSearch(extension, directory);
 	const CFileSearch::XStringVector& rFilenames = FileSearch.GetFileNames();
 
 	if (rFilenames.size() > 0)
 	{
 		for (u32 i = 0; i < rFilenames.size(); i++)
 		{
-			std::string FileName;
-			SplitPath(rFilenames[i], nullptr, &FileName, nullptr);
+			std::string filename;
+			SplitPath(rFilenames[i], nullptr, &filename, nullptr);
 
-			if (FileName.substr(0, 1).compare("_") && FileName.compare("Superswim"))
+			if (filename.substr(0, 1).compare("_") && filename.compare("Superswim"))
 			{
-				m_choice_script->Append(StrToWxStr(FileName + ".lua"));
+				m_scriptChoice->Append(StrToWxStr(filename + ".lua"));
 				for (int i = 0; i < 10; i++)
 				{
-					m_choice_scriptSlots[i]->Append(StrToWxStr(FileName + ".lua"));
+					m_scriptChoiceSlots[i]->Append(StrToWxStr(filename + ".lua"));
 				}
 			}
 		}

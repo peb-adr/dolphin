@@ -41,15 +41,14 @@ private:
 	DECLARE_EVENT_TABLE();
 
 protected:
-	wxPanel* m_panel1;
-	wxButton* m_button4;
-	wxButton* m_button5;
-	wxStaticText* m_staticText10;
-	wxChoice* m_choice_script;
-	wxButton* m_buttonScriptOpt;
-	wxStaticText* m_staticTextSlots[10];
-	wxChoice* m_choice_scriptSlots[10];
-	wxButton* m_buttonScriptOptSlots[10];
+	wxButton* m_buttonStart;
+	wxButton* m_buttonCancel;
+	wxStaticText* m_scriptLabel;
+	wxChoice* m_scriptChoice;
+	wxButton* m_scriptOptButton;
+	wxStaticText* m_scriptLabelSlots[10];
+	wxChoice* m_scriptChoiceSlots[10];
+	wxButton* m_scriptOptButtonSlots[10];
 
 	wxStaticText* m_staticTextOpt;
 
@@ -61,7 +60,6 @@ public:
 	void CancelScript(wxString scriptName);
 	void CancelScriptSlot(int scriptSlot);
 	bool CheckScript(wxString scriptName);
-	void OnSelectionChanged(wxCommandEvent& event);
 	void OnButtonPressed(wxCommandEvent& event);
 	void OnOptButtonPressed(wxCommandEvent& event);
 	void OnCloseWindow(wxCloseEvent& event);
